@@ -4,72 +4,73 @@ import pandas as pd
 # Cấu hình trang web
 st.set_page_config(page_title="VN-Tracking Dashboard", layout="wide")
 
-# ---- MÃ CSS: CHỐNG SỤT LÚN, ẨN RUNNING VÀ TẠO POPUP GÓC PHẢI ----
+# ---- MÃ CSS GỘP CHUNG: CHỐNG SỤT LÚN, POPUP VÀ DARKMODE GÓC TRÁI ----
 st.markdown("""
     <style>
         /* 1. Ẩn các nút rác của Streamlit */
         [data-testid="stStatusWidget"], .stDeployButton, header[data-testid="stHeader"] {display: none !important;}
         
-        /* 2. Chuyển Running xuống góc dưới bên trái */
+        /* 2. Chuyển Running xuống góc dưới bên trái (Nhấc lên 70px nhường chỗ cho công tắc) */
         [data-testid="stSpinner"] {
-            position: fixed !important; bottom: 20px !important; left: 20px !important; z-index: 99999 !important;
+            position: fixed !important; bottom: 70px !important; left: 20px !important; z-index: 99999 !important;
             background-color: var(--secondary-background-color); border-radius: 8px; padding: 5px 15px; width: fit-content !important;
         }
         
-        /* 3. KHÓA CỨNG CHIỀU CAO */
+        /* 3. KHÓA CỨNG CHIỀU CAO TRÁNH GIẬT MÀN HÌNH */
         .stMainBlockContainer { min-height: 100vh; }
         div[data-testid="stTabs"] { min-height: 800px; }
         
         /* 4. CSS CHO POPUP MANGA APP Ở GÓC DƯỚI BÊN PHẢI */
         .floating-widget {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 999999; /* Đảm bảo luôn nổi lên trên cùng */
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            font-family: sans-serif;
+            position: fixed; bottom: 20px; right: 20px; z-index: 999999; 
+            display: flex; flex-direction: column; align-items: flex-end; font-family: sans-serif;
         }
-        #popup-toggle {
-            display: none; /* Ẩn cái checkbox thật đi */
-        }
+        #popup-toggle { display: none; }
         .popup-btn {
-            background-color: #ff4b4b;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            text-align: center;
-            transition: 0.3s;
-            user-select: none;
+            background-color: #ff4b4b; color: white; padding: 10px 20px; border-radius: 50px; cursor: pointer;
+            font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; transition: 0.3s; user-select: none;
         }
-        .popup-btn:hover {
-            background-color: #ff3333;
-            transform: scale(1.05);
-        }
+        .popup-btn:hover { background-color: #ff3333; transform: scale(1.05); }
         .popup-iframe-container {
-            display: none;
-            margin-bottom: 15px;
-            width: 420px; /* Bề ngang của cửa sổ popup */
-            height: 550px; /* Chiều cao của cửa sổ popup */
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            background: #0e1117;
-            border: 1px solid #444;
+            display: none; margin-bottom: 15px; width: 420px; height: 550px; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #0e1117; border: 1px solid #444;
         }
-        /* Hiệu ứng bật/tắt bằng CSS Thuần */
-        #popup-toggle:checked ~ .popup-iframe-container {
-            display: block;
+        #popup-toggle:checked ~ .popup-iframe-container { display: block; }
+        #popup-toggle:checked ~ .popup-btn::after { content: "Đóng Manga App ❌"; }
+        #popup-toggle:not(:checked) ~ .popup-btn::after { content: "Mở Manga Translator 🚀"; }
+        
+        /* 5. CSS CHO CÔNG TẮC DARK/LIGHT MODE GÓC TRÁI DƯỚI */
+        .theme-switch-wrapper {
+            position: fixed; bottom: 20px; left: 20px; z-index: 999999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-radius: 34px;
         }
-        #popup-toggle:checked ~ .popup-btn::after {
-            content: "Đóng Manga App ❌";
+        .theme-switch {
+            display: inline-block; height: 34px; position: relative; width: 64px; margin: 0;
         }
-        #popup-toggle:not(:checked) ~ .popup-btn::after {
-            content: "Mở Manga Translator 🚀";
+        .theme-switch input { display:none; }
+        .theme-slider {
+            background-color: #2b2b2b; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; 
+            transition: .4s; border-radius: 34px; border: 1px solid #555; overflow: hidden;
+        }
+        .theme-slider:before {
+            background-color: #fff; bottom: 3px; content: ""; height: 26px; left: 4px; position: absolute; 
+            transition: .4s; width: 26px; border-radius: 50%; z-index: 3; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        input:checked + .theme-slider { background-color: #e0e0e0; border-color: #bbb; }
+        input:checked + .theme-slider:before { transform: translateX(28px); background-color: #222; }
+        .icon-theme { position: absolute; top: 5px; font-size: 16px; z-index: 2; }
+        .sun-icon { right: 7px; }
+        .moon-icon { left: 7px; }
+        
+        /* Hắc ma pháp Invert Màu Giao Diện */
+        body:has(#dark-mode-toggle:checked) .stApp {
+            filter: invert(1) hue-rotate(180deg);
+        }
+        /* Bảo vệ hình ảnh, nút popup và iframe Manga App không bị lộn màu */
+        body:has(#dark-mode-toggle:checked) iframe,
+        body:has(#dark-mode-toggle:checked) img,
+        body:has(#dark-mode-toggle:checked) .popup-btn {
+            filter: invert(1) hue-rotate(180deg); 
         }
     </style>
 
@@ -79,6 +80,16 @@ st.markdown("""
             <iframe src="https://manga-deepseek-grok-9cmlbuigomauxjg9st4jfd.streamlit.app/?embed=true" width="100%" height="100%" frameborder="0"></iframe>
         </div>
         <label for="popup-toggle" class="popup-btn"></label>
+    </div>
+    
+    <div class="theme-switch-wrapper" title="Đổi giao diện Sáng/Tối">
+        <label class="theme-switch" for="dark-mode-toggle">
+            <input type="checkbox" id="dark-mode-toggle">
+            <div class="theme-slider">
+                <span class="icon-theme sun-icon">☀️</span>
+                <span class="icon-theme moon-icon">🌙</span>
+            </div>
+        </label>
     </div>
 """, unsafe_allow_html=True)
 
@@ -228,19 +239,6 @@ def render_realtime_dashboard():
     else:
         df_tuan_nay = clean_df(df_raw.iloc[idx_tuan[0]:].copy()) if len(idx_tuan) > 0 else df_raw.copy()
         df_tuan_sau = pd.DataFrame(columns=df_raw.columns)
-
-    # BẬT CHẤM ĐỎ NOTIFICATION CHO TAB "TUẦN SAU" NẾU CÓ TASK
-    if not df_tuan_sau.empty:
-        st.markdown("""
-            <style>
-                div[data-testid="stTabs"] button[role="tab"]:nth-child(2) { position: relative; }
-                div[data-testid="stTabs"] button[role="tab"]:nth-child(2)::after {
-                    content: ''; position: absolute; top: 10px; right: 10px;
-                    width: 8px; height: 8px; background-color: #ff4b4b;
-                    border-radius: 50%; box-shadow: 0 0 5px rgba(255, 75, 75, 0.6);
-                }
-            </style>
-        """, unsafe_allow_html=True)
 
     # ---- BỘ LỌC DỊCH THUẬT ĐA NGÔN NGỮ ----
     st.write(t['filter_title'])
