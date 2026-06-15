@@ -166,7 +166,7 @@ def save_logtime(ngay_log, category, cong_viec, tac_pham, chuong, tap, so_trang_
 
 
 # =====================================================================
-# HÀM RENDER CHECKLIST TRỰC QUAN (ĐÃ TINH CHỈNH CSS VÀ ĐỘ CAO)
+# HÀM RENDER CHECKLIST TRỰC QUAN 
 # =====================================================================
 def get_checklist_html(tac_pham_key, index, lang):
     txt = {
@@ -176,7 +176,8 @@ def get_checklist_html(tac_pham_key, index, lang):
             't3': 'Báo bắt đầu', 't4': 'O: 開始 (Bắt đầu)', 't5': 'Not Started → In Progress',
             't6': 'Báo hoàn thành', 't7': 'N: 納品済み', 't8': 'Trạng thái: Delivered',
             'copy_start': '📋 Copy Báo Bắt Đầu', 'ask_task': 'Trễ chỉ thị? (Hỏi Task)', 'copy_ask': '📋 Copy Hỏi Task',
-            'copy_done': '📋 Copy Báo Hoàn Thành', 'copied': '✅ Đã Copy'
+            'copy_done': '📋 Copy Báo Hoàn Thành', 'copied': '✅ Đã Copy',
+            'copy_deliver': '📋 Copy Báo Giao Hàng'
         },
         'ja': {
             'step1': 'STEP 1: 準備', 'step2': 'STEP 2: 着手', 'step3': 'STEP 3: 納品',
@@ -184,7 +185,8 @@ def get_checklist_html(tac_pham_key, index, lang):
             't3': '着手報告 (Asana)', 't4': 'O列：開始', 't5': 'Not Started → In Progress',
             't6': '完了報告 (Asana)', 't7': 'N列：納品済み', 't8': 'ステータス：Delivered',
             'copy_start': '📋 着手報告をコピー', 'ask_task': '指示遅れ？(確認する)', 'copy_ask': '📋 確認文をコピー',
-            'copy_done': '📋 完了報告をコピー', 'copied': '✅ コピー完了'
+            'copy_done': '📋 完了報告をコピー', 'copied': '✅ コピー完了',
+            'copy_deliver': '📋 納品メッセージをコピー'
         }
     }
     l = txt[lang]
@@ -283,6 +285,11 @@ def get_checklist_html(tac_pham_key, index, lang):
                     <span class="badge notion">Notion</span>
                     <label class="check-wrapper"><input type="checkbox" id="t8_{index}"><span class="checkmark"></span><div class="action-text">{l['t8']}</div></label>
                 </div>
+                
+                <div class="snippet-box" id="msg_t8_{index}">納品いたしました。
+ご確認のほどよろしくお願いいたします。</div>
+                <button class="btn-copy" onclick="copyText(this, 'msg_t8_{index}')">{l['copy_deliver']}</button>
+                
             </div>
         </div>
         
@@ -423,8 +430,8 @@ def render_realtime_dashboard():
                 tp_name = str(row['Công việc']).strip() + " - " + str(row['Tên tác phẩm']).strip()
                 
                 with st.expander(f"➕ {tp_name}"):
-                    # ĐÃ ĐIỀU CHỈNH HEIGHT VỀ 270 ĐỂ VỪA KHÍT GIAO DIỆN
-                    components.html(get_checklist_html(tp_name, index, st.session_state.lang), height=270, scrolling=False)
+                    # ĐÃ ĐIỀU CHỈNH HEIGHT VỀ 330 ĐỂ VỪA KHÍT GIAO DIỆN MỚI
+                    components.html(get_checklist_html(tp_name, index, st.session_state.lang), height=330, scrolling=False)
                     
                     with st.form(key=f"form_log_{index}"):
                         ngay_log = st.date_input(t['f_date'], value=date.today(), key=f"date_{index}")
