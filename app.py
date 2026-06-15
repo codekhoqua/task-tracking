@@ -3,19 +3,20 @@ import pandas as pd
 import requests
 from datetime import date
 import time
+import streamlit.components.v1 as components
 
-# Cấu hình trang web
-st.set_page_config(page_title="VN-Tracking Dashboard", layout="wide")
+# 1. CẤU HÌNH TRANG
+st.set_page_config(page_title="VN-Tracking Dashboard", layout="wide", initial_sidebar_state="expanded")
 
-# ---- MÃ CSS GỘP CHUNG: CHỐNG SỤT LÚN, POPUP VÀ DARKMODE GÓC TRÁI ----
+# ---- MÃ CSS GỘP CHUNG ----
 st.markdown("""
     <style>
-        [data-testid="stStatusWidget"], .stDeployButton, header[data-testid="stHeader"] {display: none !important;}
-        
-        /* Đã xóa CSS ghim stSpinner ở góc dưới để nó có thể nằm cạnh nút bấm */
+        [data-testid="stStatusWidget"], .stDeployButton, [data-testid="stMainMenu"] {display: none !important;}
+        header[data-testid="stHeader"] {background-color: transparent !important;}
         
         .stMainBlockContainer { min-height: 100vh; }
         div[data-testid="stTabs"] { min-height: 800px; }
+        
         .floating-widget { position: fixed; bottom: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; align-items: flex-end; font-family: sans-serif; }
         #popup-toggle { display: none; }
         .popup-btn { background-color: #ff4b4b; color: white; padding: 10px 20px; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; transition: 0.3s; user-select: none; }
@@ -24,6 +25,7 @@ st.markdown("""
         #popup-toggle:checked ~ .popup-iframe-container { display: block; }
         #popup-toggle:checked ~ .popup-btn::after { content: "Đóng Manga App ❌"; }
         #popup-toggle:not(:checked) ~ .popup-btn::after { content: "Mở Manga Translator 🚀"; }
+        
         .theme-switch-wrapper { position: fixed; bottom: 20px; left: 20px; z-index: 999999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-radius: 34px; }
         .theme-switch { display: inline-block; height: 34px; position: relative; width: 64px; margin: 0; }
         .theme-switch input { display:none; }
@@ -57,10 +59,12 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# KHỞI TẠO BIẾN STATE
 if 'lang' not in st.session_state: st.session_state.lang = 'vi'
 if 'df_nay_old' not in st.session_state: st.session_state.df_nay_old = None
 if 'df_sau_old' not in st.session_state: st.session_state.df_sau_old = None
 
+# GIAO DIỆN CHỌN NGÔN NGỮ
 col_title, col_lang = st.columns([8, 2])
 with col_lang:
     st.write("") 
@@ -77,7 +81,21 @@ dict_lang = {
         'no_filter': "Không có tác phẩm nào khớp với bộ lọc!", 'no_task': "Tuần sau hiện chưa có task nào được phân công!",
         'metric_total': "Tổng số Task", 'metric_retouch': "Số task Retouch", 'metric_type': "Số task Lettering",
         'not_update': "Chưa cập nhật",
-        'cols': ['Công việc', 'Tên tác phẩm', 'Chương', 'Tập', 'Số trang', 'NXB', 'Ngày bắt đầu', 'Deadline (Nộp)', 'VN', 'Người thực hiện', 'QC Nội bộ', 'Quản lý', 'Trạng thái', 'Bắt đầu', 'Ghi chú']
+        'cols': ['Công việc', 'Tên tác phẩm', 'Chương', 'Tập', 'Số trang', 'NXB', 'Ngày bắt đầu', 'Deadline (Nộp)', 'VN', 'Người thực hiện', 'QC Nội bộ', 'Quản lý', 'Trạng thái', 'Bắt đầu', 'Ghi chú'],
+        'logtime_title': "⏱️ KHU VỰC BÁO CÁO TIẾN ĐỘ (LOGTIME & CHECKLIST)",
+        'logtime_empty': "Hiện không có task nào để logtime.",
+        'f_date': "📅 Ngày làm việc:",
+        'f_cat': "📚 Loại truyện (カテゴリ):",
+        'f_diff': "🔥 Độ khó (難易度):",
+        'f_worker': "👤 Người làm:",
+        'f_hours': "⏳ Số giờ làm hôm nay:",
+        'f_pages': "📄 Số page HT (Tổng: {total}):",
+        'f_note': "📝 Ghi chú thêm (nếu có):",
+        'f_btn': "Lưu Logtime",
+        'f_warn': "⚠️ Vui lòng nhập số giờ hoặc số trang trước khi lưu!",
+        'f_sync': "⏳ Đang đẩy dữ liệu sang JP...",
+        'f_succ': "✅ Đã lưu thành công cho {worker}: {hours} giờ, {pages} trang.",
+        'f_err': "❌ Có lỗi xảy ra khi lưu vào Sheet JP."
     },
     'ja': {
         'title': "📊 ベトナムチーム進捗管理", 'filter_title': "### 🔍 表示フィルター",
@@ -88,7 +106,21 @@ dict_lang = {
         'no_filter': "フィルターに一致する作品はありません！", 'no_task': "来週のタスクはまだ割り当てられていません！",
         'metric_total': "表示中のタスク総数", 'metric_retouch': "レタッチタスク数", 'metric_type': "写植タスク数",
         'not_update': "未更新",
-        'cols': ['作業内容', '作品名', '話数', '巻数', 'ページ', '出版社', '開始日', '提出日', 'VN', '作業者', '社内QC', '進行管理', 'ステータス', '開始', '備考']
+        'cols': ['作業内容', '作品名', '話数', '巻数', 'ページ', '出版社', '開始日', '提出日', 'VN', '作業者', '社内QC', '進行管理', 'ステータス', '開始', '備考'],
+        'logtime_title': "⏱️ 進捗報告エリア (ログタイム＆チェックリスト)",
+        'logtime_empty': "現在、報告するタスクはありません。",
+        'f_date': "📅 作業日:",
+        'f_cat': "📚 カテゴリ:",
+        'f_diff': "🔥 難易度:",
+        'f_worker': "👤 作業者:",
+        'f_hours': "⏳ 今日の作業時間:",
+        'f_pages': "📄 完了ページ数 (計: {total}):",
+        'f_note': "📝 備考 (あれば):",
+        'f_btn': "保存する",
+        'f_warn': "⚠️ 保存する前に時間またはページ数を入力してください！",
+        'f_sync': "⏳ データを送信中...",
+        'f_succ': "✅ {worker} のデータを保存しました: {hours} 時間, {pages} ページ。",
+        'f_err': "❌ エラーが発生しました。"
     }
 }
 t = dict_lang[st.session_state.lang]
@@ -132,7 +164,190 @@ def save_logtime(ngay_log, category, cong_viec, tac_pham, chuong, tap, so_trang_
     try: return requests.post(api_url, json=payload).status_code == 200
     except: return False
 
-# ĐÃ GIẢM THỜI GIAN REFRESH XUỐNG 30S ĐỂ GIẢM LAG
+
+# =====================================================================
+# HÀM RENDER CHECKLIST TRỰC QUAN (ĐÃ TINH CHỈNH CSS VÀ ĐỘ CAO)
+# =====================================================================
+def get_checklist_html(tac_pham_key, index, lang):
+    txt = {
+        'vi': {
+            'step1': 'STEP 1: CHUẨN BỊ', 'step2': 'STEP 2: BẮT ĐẦU', 'step3': 'STEP 3: GIAO HÀNG',
+            't1': 'Tạo Task DB_工程管理', 't2': 'N: notion済', 
+            't3': 'Báo bắt đầu', 't4': 'O: 開始 (Bắt đầu)', 't5': 'Not Started → In Progress',
+            't6': 'Báo hoàn thành', 't7': 'N: 納品済み', 't8': 'Trạng thái: Delivered',
+            'copy_start': '📋 Copy Báo Bắt Đầu', 'ask_task': 'Trễ chỉ thị? (Hỏi Task)', 'copy_ask': '📋 Copy Hỏi Task',
+            'copy_done': '📋 Copy Báo Hoàn Thành', 'copied': '✅ Đã Copy'
+        },
+        'ja': {
+            'step1': 'STEP 1: 準備', 'step2': 'STEP 2: 着手', 'step3': 'STEP 3: 納品',
+            't1': 'DB_工程管理にタスク作成', 't2': 'N列：notion済', 
+            't3': '着手報告 (Asana)', 't4': 'O列：開始', 't5': 'Not Started → In Progress',
+            't6': '完了報告 (Asana)', 't7': 'N列：納品済み', 't8': 'ステータス：Delivered',
+            'copy_start': '📋 着手報告をコピー', 'ask_task': '指示遅れ？(確認する)', 'copy_ask': '📋 確認文をコピー',
+            'copy_done': '📋 完了報告をコピー', 'copied': '✅ コピー完了'
+        }
+    }
+    l = txt[lang]
+    
+    return f"""
+    <!DOCTYPE html>
+    <html lang="{lang}">
+    <head>
+        <style>
+            :root {{ --primary: #0f4c81; --bg: #f8f9fa; --text: #2c3e50; }}
+            * {{ box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }}
+            body {{ background: transparent; color: var(--text); padding: 0; margin: 0; overflow: hidden; }}
+            .grid-container {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; width: 100%; align-items: start; }}
+            .step-col {{ background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }}
+            .step-header {{ font-size: 11px; font-weight: 800; color: #15803d; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; text-transform: uppercase; }}
+            
+            .task-row {{ display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; padding: 2px 0; flex-wrap: wrap; }}
+            .badge {{ font-size: 9px; padding: 2px 4px; border-radius: 2px; color: #fff; font-weight: bold; width: 50px; text-align: center; flex-shrink: 0; }}
+            .notion {{ background: #000; }} .sheet {{ background: #107c41; }} .asana {{ background: #fc636b; }}
+            
+            .check-wrapper {{ position: relative; cursor: pointer; flex-grow: 1; display: flex; align-items: center; min-height: 18px; }}
+            .check-wrapper input {{ display: none; }}
+            .action-text {{ font-size: 11px; margin-left: 20px; transition: 0.2s; line-height: 1.2; font-weight: 600; color: #1e293b; }}
+            .checkmark {{ position: absolute; top: 0; left: 0; width: 14px; height: 14px; background: #eee; border-radius: 3px; border: 1px solid #cbd5e1; }}
+            
+            .check-wrapper input:checked ~ .checkmark {{ background: #22c55e; border-color: #22c55e; }}
+            .check-wrapper input:checked ~ .checkmark:after {{ content: ""; position: absolute; display: block; left: 4px; top: 1px; width: 3px; height: 7px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }}
+            .check-wrapper input:checked ~ .action-text {{ text-decoration: line-through; color: #94a3b8; }}
+            
+            .snippet-box {{ background: #f8fafc; border: 1px dashed #cbd5e1; padding: 5px; border-radius: 4px; font-family: monospace; font-size: 9.5px; color: #334155; white-space: pre-line; margin-bottom: 4px; margin-left: 58px; line-height: 1.3; }}
+            .btn-copy {{ display: inline-flex; align-items: center; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; font-size: 9px; cursor: pointer; color: #0f4c81; font-weight: bold; margin-left: 58px; margin-bottom: 8px; transition: 0.2s; }}
+            .btn-copy:hover {{ background: #e2e8f0; }}
+            .btn-copy.success {{ background: #22c55e; color: white; border-color: #16a34a; }}
+            
+            summary {{ font-size: 10px; font-weight: bold; color: #d97706; cursor: pointer; margin-left: 58px; margin-bottom: 4px; user-select: none; }}
+        </style>
+    </head>
+    <body>
+        <div class="grid-container">
+            <div class="step-col">
+                <div class="step-header">{l['step1']}</div>
+                <div class="task-row">
+                    <span class="badge notion">Notion</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t1_{index}"><span class="checkmark"></span><div class="action-text">{l['t1']}</div></label>
+                </div>
+                <div class="task-row">
+                    <span class="badge sheet">Sheet</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t2_{index}"><span class="checkmark"></span><div class="action-text">{l['t2']}</div></label>
+                </div>
+            </div>
+            
+            <div class="step-col">
+                <div class="step-header">{l['step2']}</div>
+                <div class="task-row">
+                    <span class="badge asana">Asana</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t3_{index}"><span class="checkmark"></span><div class="action-text">{l['t3']}</div></label>
+                </div>
+                <div class="snippet-box" id="msg_t3_{index}">(PC) cc @Shiori Fujimura @Miho Osada @Erika Kawasaki
+===タスク着手===</div>
+                <button class="btn-copy" onclick="copyText(this, 'msg_t3_{index}')">{l['copy_start']}</button>
+                
+                <details>
+                    <summary>{l['ask_task']}</summary>
+                    <div class="snippet-box" id="jp_t3_{index}">お疲れ様です。
+写植工程を担当しております○○です。
+本日が作業開始日となっておりますが、現時点でまだご指示をいただいておりません。
+お手数をおかけいたしますが、ご確認のほどよろしくお願いいたします。</div>
+                    <button class="btn-copy" onclick="copyText(this, 'jp_t3_{index}')">{l['copy_ask']}</button>
+                </details>
+                
+                <div class="task-row">
+                    <span class="badge sheet">Sheet</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t4_{index}"><span class="checkmark"></span><div class="action-text">{l['t4']}</div></label>
+                </div>
+                <div class="task-row">
+                    <span class="badge notion">Notion</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t5_{index}"><span class="checkmark"></span><div class="action-text">{l['t5']}</div></label>
+                </div>
+            </div>
+
+            <div class="step-col">
+                <div class="step-header">{l['step3']}</div>
+                <div class="task-row">
+                    <span class="badge asana">Asana</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t6_{index}"><span class="checkmark"></span><div class="action-text">{l['t6']}</div></label>
+                </div>
+                <div class="snippet-box" id="msg_t6_{index}">(PC) cc @Shiori Fujimura @Miho Osada @Erika Kawasaki
+■■■タスク完了■■■</div>
+                <button class="btn-copy" onclick="copyText(this, 'msg_t6_{index}')">{l['copy_done']}</button>
+                
+                <div class="task-row">
+                    <span class="badge sheet">Sheet</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t7_{index}"><span class="checkmark"></span><div class="action-text">{l['t7']}</div></label>
+                </div>
+                <div class="task-row">
+                    <span class="badge notion">Notion</span>
+                    <label class="check-wrapper"><input type="checkbox" id="t8_{index}"><span class="checkmark"></span><div class="action-text">{l['t8']}</div></label>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            function copyText(btn, id) {{
+                const text = document.getElementById(id).textContent;
+                navigator.clipboard.writeText(text).then(() => {{
+                    const oldText = btn.innerText;
+                    btn.innerText = "{l['copied']}";
+                    btn.classList.add("success");
+                    setTimeout(() => {{
+                        btn.innerText = oldText;
+                        btn.classList.remove("success");
+                    }}, 2000);
+                }}).catch(err => console.error('Lỗi copy', err));
+            }}
+            
+            const tpKey = "{tac_pham_key}";
+            // ĐÃ ĐIỀN LINK WEB APP CỦA BẠN:
+            const API_URL = "https://script.google.com/macros/s/AKfycbxBBnAtd7tEfDG3wsFV6bmb7Gd_ciDGmgAlVWaChq2iuiMQ3hVeuNKyb3TcPmjscd60Cw/exec";
+            
+            const checks = document.querySelectorAll('input[type="checkbox"]');
+            
+            checks.forEach(cb => {{
+                const rawId = cb.id.split('_')[0]; 
+                const storageKey = tpKey + "_" + rawId;
+                
+                if (localStorage.getItem(storageKey) === 'true') cb.checked = true;
+                
+                cb.addEventListener('change', async (e) => {{
+                    const isChecked = e.target.checked;
+                    localStorage.setItem(storageKey, isChecked);
+                    
+                    if(API_URL.startsWith("http")) {{
+                        fetch(API_URL, {{
+                            method: "POST",
+                            mode: "no-cors",
+                            headers: {{ "Content-Type": "text/plain;charset=utf-8" }},
+                            body: JSON.stringify({{ tac_pham: tpKey, checkbox_id: rawId, status: isChecked }})
+                        }}).catch(()=>console.log("Lỗi Sync"));
+                    }}
+                }});
+            }});
+            
+            if(API_URL.startsWith("http")) {{
+                fetch(API_URL + "?tac_pham=" + encodeURIComponent(tpKey))
+                .then(res => res.json())
+                .then(data => {{
+                    checks.forEach(cb => {{
+                        const rawId = cb.id.split('_')[0];
+                        if(data[rawId] !== undefined) {{
+                            cb.checked = (data[rawId] === true || data[rawId] === "true");
+                            localStorage.setItem(tpKey + "_" + rawId, cb.checked);
+                        }}
+                    }});
+                }}).catch(()=>console.log("Dùng Offline"));
+            }}
+        </script>
+    </body>
+    </html>
+    """
+
+# =====================================================================
+# HÀM CẬP NHẬT DỮ LIỆU CHÍNH (LẶP MỖI 30S)
+# =====================================================================
 @st.fragment(run_every="30s")
 def render_realtime_dashboard():
     try: df_raw = pd.read_csv(csv_url, usecols=list(range(1, 16)), header=None)
@@ -170,11 +385,11 @@ def render_realtime_dashboard():
     col_filter1, col_filter2 = st.columns(2)
     with col_filter1:
         cv_nay_list = df_tuan_nay["Công việc"].dropna().unique()
-        cv_nay = st.multiselect(t['cv_nay'], options=cv_nay_list, default=[cv for cv in ["レタッチ", "写植"] if cv in cv_nay_list])
+        cv_nay = st.multiselect(t['cv_nay'], options=cv_nay_list)
         nguoi_nay = st.multiselect(t['nguoi_nay'], options=df_tuan_nay["Người thực hiện"].dropna().unique())
     with col_filter2:
         cv_sau_list = df_tuan_sau["Công việc"].dropna().unique()
-        cv_sau = st.multiselect(t['cv_sau'], options=cv_sau_list, default=[cv for cv in ["レタッチ", "写植"] if cv in cv_sau_list])
+        cv_sau = st.multiselect(t['cv_sau'], options=cv_sau_list)
         nguoi_sau = st.multiselect(t['nguoi_sau'], options=df_tuan_sau["Người thực hiện"].dropna().unique())
 
     df_nay_filtered = df_tuan_nay[df_tuan_nay["Công việc"].isin(cv_nay)] if cv_nay else df_tuan_nay
@@ -200,51 +415,56 @@ def render_realtime_dashboard():
             c3.metric(t['metric_type'], len(df_nay_filtered[df_nay_filtered["Công việc"] == "写植"]))
 
         st.markdown("---")
-        st.subheader("⏱️ KHU VỰC BÁO CÁO TIẾN ĐỘ (LOGTIME)")
+        st.subheader(t['logtime_title'])
         
-        if df_nay_filtered.empty: st.info("Hiện không có task nào để logtime.")
+        if df_nay_filtered.empty: st.info(t['logtime_empty'])
         else:
             for index, row in df_nay_filtered.iterrows():
-                with st.expander(f"➕ {row['Công việc']} | {row['Tên tác phẩm']}"):
+                tp_name = str(row['Công việc']).strip() + " - " + str(row['Tên tác phẩm']).strip()
+                
+                with st.expander(f"➕ {tp_name}"):
+                    # ĐÃ ĐIỀU CHỈNH HEIGHT VỀ 270 ĐỂ VỪA KHÍT GIAO DIỆN
+                    components.html(get_checklist_html(tp_name, index, st.session_state.lang), height=270, scrolling=False)
+                    
                     with st.form(key=f"form_log_{index}"):
-                        ngay_log = st.date_input("📅 Ngày làm việc:", value=date.today(), key=f"date_{index}")
+                        ngay_log = st.date_input(t['f_date'], value=date.today(), key=f"date_{index}")
                         
                         c_cat, c_diff, c_worker = st.columns(3)
-                        with c_cat: loai_truyen = st.selectbox("📚 Loại truyện (カテゴリ):", ["単行本", "読切", "連載"], index=0, key=f"cat_{index}")
-                        with c_diff: do_kho = st.selectbox("🔥 Độ khó (難易度):", ["", "低", "中", "高"], index=0, key=f"diff_{index}")
+                        with c_cat: loai_truyen = st.selectbox(t['f_cat'], ["単行本", "読切", "連載"], index=0, key=f"cat_{index}")
+                        with c_diff: do_kho = st.selectbox(t['f_diff'], ["", "低", "中", "高"], index=0, key=f"diff_{index}")
                         with c_worker:
-                            worker_options = ["Tan-タン", "Vinh-ジン", "Kim-キム", "Thao-タオ", "Hieu-コウ", "Anh-アイン", "Khuong-クォン", "Anh-ケ"]
+                            worker_options = ["Tan-タン", "Vinh-ジン", "Kim-キム", "Thao-タオ", "Hieu-コウ", "Anh-アイン", "Khuong-クォン", "Anh-ケ", "Thang-タンコイ"]
                             current_worker = str(row['Người thực hiện']).strip()
                             if pd.notna(row['Người thực hiện']) and current_worker != "" and current_worker not in worker_options:
                                 worker_options.append(current_worker)
                             
                             default_idx = worker_options.index(current_worker) if pd.notna(row['Người thực hiện']) and current_worker in worker_options else 0
-                            nguoi_lam_final = st.selectbox("👤 Người làm:", worker_options, index=default_idx, key=f"sel_worker_{index}")
+                            nguoi_lam_final = st.selectbox(t['f_worker'], worker_options, index=default_idx, key=f"sel_worker_{index}")
 
                         col1, col2 = st.columns(2)
-                        with col1: so_gio = st.number_input("⏳ Số giờ làm hôm nay:", min_value=0.0, step=0.5, key=f"gio_{index}")
-                        with col2: so_page = st.number_input(f"📄 Số page HT (Tổng: {row['Số trang']}):", min_value=0, step=1, key=f"page_{index}")
+                        with col1: so_gio = st.number_input(t['f_hours'], min_value=0.0, step=0.5, key=f"gio_{index}")
                         
-                        ghi_chu_log = st.text_input("📝 Ghi chú thêm (nếu có):", key=f"note_{index}")
+                        so_trang_tong = row['Số trang'] if pd.notna(row['Số trang']) else 0
+                        with col2: so_page = st.number_input(t['f_pages'].format(total=so_trang_tong), min_value=0, step=1, key=f"page_{index}")
                         
-                        # --- CHIA CỘT ĐỂ NÚT BẤM VÀ THÔNG BÁO NẰM CẠNH NHAU ---
+                        ghi_chu_log = st.text_input(t['f_note'], key=f"note_{index}")
+                        
                         submit_col, msg_col = st.columns([2, 8])
-                        
                         with submit_col:
-                            submit_btn = st.form_submit_button("Lưu Logtime")
+                            submit_btn = st.form_submit_button(t['f_btn'])
                             
                         if submit_btn:
-                            with msg_col: # Spinner và thông báo sẽ hiện ở cột bên phải, ngang hàng với nút bấm
+                            with msg_col: 
                                 if so_gio == 0 and so_page == 0: 
-                                    st.warning("⚠️ Vui lòng nhập số giờ hoặc số trang trước khi lưu!")
+                                    st.warning(t['f_warn'])
                                 else:
-                                    with st.spinner("⏳ Đang đẩy dữ liệu sang JP... (Thường mất khoảng 2-3 giây)"):
+                                    with st.spinner(t['f_sync']):
                                         is_success = save_logtime(ngay_log, loai_truyen, row['Công việc'], row['Tên tác phẩm'], row['Chương'], row['Tập'], row['Số trang'], nguoi_lam_final, so_gio, so_page, do_kho, ghi_chu_log)
                                     
                                     if is_success: 
-                                        st.success(f"✅ Đã lưu thành công cho {nguoi_lam_final}: {so_gio} giờ, {so_page} trang.")
+                                        st.success(t['f_succ'].format(worker=nguoi_lam_final, hours=so_gio, pages=so_page))
                                     else: 
-                                        st.error("❌ Có lỗi xảy ra khi lưu vào Sheet JP.")
+                                        st.error(t['f_err'])
 
     with tab2:
         st.info(f"**{t['time']}** {thong_tin_tuan_sau['start']} ➡️ {thong_tin_tuan_sau['end']} &nbsp;&nbsp;|&nbsp;&nbsp; **{t['deadline']}** {thong_tin_tuan_sau['deadline']}")
