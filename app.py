@@ -274,7 +274,7 @@ def get_checklist_html(tac_pham_key, index, lang):
                     <label class="check-wrapper"><input type="checkbox" id="t6_{index}"><span class="checkmark"></span><div class="action-text">{l['t6']}</div></label>
                 </div>
                 <div class="snippet-box" id="msg_t6_{index}">(PC) cc @Shiori Fujimura @Miho Osada @Erika Kawasaki
-■■■タスク完了■■■</div>
+===タスク完了===</div>
                 <button class="btn-copy" onclick="copyText(this, 'msg_t6_{index}')">{l['copy_done']}</button>
                 
                 <div class="task-row">
