@@ -45,9 +45,8 @@ st.markdown("""
 # 2. CƠ SỞ DỮ LIỆU TÀI KHOẢN VÀ LINK DỮ LIỆU
 # =====================================================================
 USER_SHEET_URL = "https://docs.google.com/spreadsheets/d/1VLlDF5XoXt0Rz0ACZ3EZRKcKWFnIRXptMPbQthimNE0/export?format=csv&gid=0"
-
-# 🔴🔴🔴 DÁN LINK WEB APP MỚI CỦA BẠN VÀO ĐÂY LÀ ĐỦ: 🔴🔴🔴
 CHECKLIST_API_URL = "https://script.google.com/macros/s/AKfycbyguXQno1gohakWqgfTwd0uP-b9BNkkExBcXIe23O267Jr2cXBX2JDSuS0_EVu_uv-7/exec"
+CHANGE_PASS_API = "https://script.google.com/macros/s/AKfycbxLWNSqylAHWvkY4JKNvCTpDQMiL2Vgl8_EYEhBI7Ob7OTcIVRXXiJmBQzDa4oNMAVK/exec"
 
 @st.cache_data(ttl=60)
 def load_users_from_sheet(url):
@@ -57,7 +56,6 @@ def load_users_from_sheet(url):
     except Exception as e:
         return {}
 
-# 🟢 Tính năng đọc dữ liệu Real-time thay cho CSV
 @st.cache_data(ttl=2) 
 def load_checklist_data(api_url):
     try:
@@ -78,6 +76,8 @@ if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'current_user' not in st.session_state: st.session_state.current_user = None
 if 'user_role' not in st.session_state: st.session_state.user_role = None
 if 'success_logs' not in st.session_state: st.session_state.success_logs = {}
+# Thêm biến lưu thời gian logtime gần nhất cho từng task
+if 'last_log_time' not in st.session_state: st.session_state.last_log_time = {}
 
 # =====================================================================
 # 3. HỆ THỐNG ĐĂNG NHẬP
@@ -117,9 +117,8 @@ with col_logout2:
         st.session_state.current_user = None
         st.session_state.user_role = None
         st.session_state.success_logs = {}
+        st.session_state.last_log_time = {} # Xóa luôn thời gian chờ khi đăng xuất
         st.rerun()
-
-CHANGE_PASS_API = "https://script.google.com/macros/s/AKfycbxLWNSqylAHWvkY4JKNvCTpDQMiL2Vgl8_EYEhBI7Ob7OTcIVRXXiJmBQzDa4oNMAVK/exec"
 
 with st.sidebar:
     st.markdown("### 🔑 Đổi mật khẩu")
@@ -256,35 +255,25 @@ def get_checklist_html(tac_pham_key, index, lang, api_url):
             :root {{ --primary: #0f4c81; --bg: #f8f9fa; --text: #2c3e50; }}
             * {{ box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }}
             body {{ background: transparent; color: var(--text); padding: 5px; margin: 0; overflow: hidden; }}
-            
             .grid-container {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; width: 100%; align-items: stretch; }}
-            .step-col {{ 
-                background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; 
-                height: 100%; display: flex; flex-direction: column; 
-                box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: transform 0.2s, box-shadow 0.2s;
-            }}
+            .step-col {{ background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; height: 100%; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: transform 0.2s, box-shadow 0.2s; }}
             .step-col:hover {{ transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.08); border-color: #cbd5e1; }}
             .step-header {{ font-size: 12px; font-weight: 800; color: #16a34a; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }}
-            
             .task-row {{ display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding: 4px 0; flex-wrap: wrap; }}
             .badge {{ font-size: 9px; padding: 3px 6px; border-radius: 4px; color: #fff; font-weight: bold; width: 52px; text-align: center; flex-shrink: 0; letter-spacing: 0.2px; }}
             .notion {{ background: #000; }} .sheet {{ background: #107c41; }} .asana {{ background: #fc636b; }}
-            
             .check-wrapper {{ position: relative; cursor: pointer; flex-grow: 1; display: flex; align-items: center; min-height: 20px; }}
             .check-wrapper input {{ display: none; }}
             .action-text {{ font-size: 11.5px; margin-left: 24px; transition: 0.2s; line-height: 1.3; font-weight: 500; color: #334155; }}
             .checkmark {{ position: absolute; top: 1px; left: 0; width: 16px; height: 16px; background: #f8fafc; border-radius: 4px; border: 1.5px solid #cbd5e1; transition: 0.2s; }}
-            
             .check-wrapper:hover .checkmark {{ border-color: #94a3b8; background: #f1f5f9; }}
             .check-wrapper input:checked ~ .checkmark {{ background: #22c55e; border-color: #22c55e; }}
             .check-wrapper input:checked ~ .checkmark:after {{ content: ""; position: absolute; display: block; left: 5px; top: 1px; width: 3px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }}
             .check-wrapper input:checked ~ .action-text {{ text-decoration: line-through; color: #94a3b8; font-weight: 400; }}
-            
             .snippet-box {{ background: #f8fafc; border: 1px dashed #cbd5e1; padding: 6px 8px; border-radius: 6px; font-family: monospace; font-size: 9.5px; color: #475569; white-space: pre-line; margin-bottom: 6px; margin-left: 62px; line-height: 1.4; }}
             .btn-copy {{ display: inline-flex; align-items: center; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 6px; font-size: 9.5px; cursor: pointer; color: #0f4c81; font-weight: 600; margin-left: 62px; margin-bottom: 10px; transition: 0.2s; }}
             .btn-copy:hover {{ background: #e2e8f0; border-color: #94a3b8; color: #000; }}
             .btn-copy.success {{ background: #22c55e; color: white; border-color: #16a34a; }}
-            
             summary {{ font-size: 10.5px; font-weight: 600; color: #d97706; cursor: pointer; margin-left: 62px; margin-bottom: 6px; user-select: none; transition: 0.2s; }}
             summary:hover {{ color: #b45309; }}
         </style>
@@ -331,8 +320,6 @@ def get_checklist_html(tac_pham_key, index, lang, api_url):
             }}
             
             const tpKey = "{tac_pham_key}";
-            
-            // Link API đã được đồng bộ tự động từ code Python xuống đây!
             const API_URL = "{api_url}";
             
             const checks = document.querySelectorAll('input[type="checkbox"]');
@@ -449,7 +436,6 @@ def render_realtime_dashboard():
                 worker_name = str(row['Người thực hiện']).strip()
                 
                 with st.expander(f"📝 {tp_name}  |  👤 {worker_name}"):
-                    # Đưa thẳng CHECKLIST_API_URL từ trên đầu xuống đây
                     components.html(get_checklist_html(tp_name, index, st.session_state.lang, CHECKLIST_API_URL), height=340, scrolling=False)
                     
                     with st.form(key=f"form_log_{index}"):
@@ -470,18 +456,35 @@ def render_realtime_dashboard():
                         sub_c, msg_c = st.columns([2, 8])
                         with sub_c: submit_btn = st.form_submit_button(t['f_btn'])
                             
+                        # ---- XỬ LÝ CHẶN SPAM 5 PHÚT & PHÁO HOA ----
                         if submit_btn:
-                            with msg_c: 
-                                if so_gio == 0 and so_page == 0: st.warning(t['f_warn'])
+                            with msg_c:
+                                current_time = time.time()
+                                last_time = st.session_state.last_log_time.get(index, 0)
+                                time_diff = current_time - last_time
+                                
+                                # Nếu chưa qua 300 giây (5 phút), hiển thị cảnh báo
+                                if time_diff < 300: 
+                                    rem_m, rem_s = divmod(int(300 - time_diff), 60)
+                                    st.warning(f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ {rem_m} phút {rem_s} giây nữa để lưu lại task này.")
+                                elif so_gio == 0 and so_page == 0: 
+                                    st.warning(t['f_warn'])
                                 else:
                                     with st.spinner(t['f_sync']):
                                         if save_logtime(ngay_log, loai_truyen, row['Công việc'], row['Tên tác phẩm'], row['Chương'], row['Tập'], row['Số trang'], nguoi_lam_final, so_gio, so_page, do_kho, ghi_chu_log): 
+                                            # Đánh dấu thời gian thành công
+                                            st.session_state.last_log_time[index] = time.time() 
+                                            
                                             msg = t['f_succ'].format(worker=nguoi_lam_final, hours=so_gio, pages=so_page)
                                             st.session_state.success_logs[index] = msg
                                             st.success(msg)
-                                        else: st.error(t['f_err'])
+                                            
+                                           
+                                        else: 
+                                            st.error(t['f_err'])
                         elif index in st.session_state.success_logs:
-                            with msg_c: st.success(st.session_state.success_logs[index])
+                            with msg_c: 
+                                st.success(st.session_state.success_logs[index])
 
     # === TAB 2: TUẦN SAU ===
     with tabs[1]:
