@@ -6,40 +6,201 @@ import time
 import streamlit.components.v1 as components
 
 # =====================================================================
-# 1. CẤU HÌNH TRANG & MÃ CSS GỘP CHUNG (UI CẢI TIẾN)
+# 1. CẤU HÌNH TRANG & MÃ CSS GỘP CHUNG (CHỈ DARK MODE)
 # =====================================================================
 st.set_page_config(page_title="VN-Tracking Dashboard", layout="wide", initial_sidebar_state="expanded")
 
-st.markdown("""
+def render_dark_theme_css():
+    """Sinh CSS cố định cho Dark Mode và tùy chỉnh Topbar."""
+    colors = {
+        "primary": "#3b82f6", "primary_dark": "#2563eb", "primary_light": "#1e293b",
+        "accent": "#fb923c", "success": "#22c55e", "danger": "#f87171", "warning": "#fbbf24",
+        "surface": "#1e293b", "surface_soft": "#0f172a", "border": "#334155",
+        "text_main": "#f1f5f9", "text_muted": "#94a3b8",
+        "app_bg_1": "#0b1220", "app_bg_2": "#0f172a",
+        "shadow_sm": "0 1px 3px rgba(0,0,0,0.35)", "shadow_md": "0 6px 20px rgba(0,0,0,0.45)",
+        "shadow_lg": "0 12px 36px rgba(0,0,0,0.55)",
+        "input_bg": "#0f172a"
+    }
+
+    st.markdown(f"""
     <style>
-        [data-testid="stStatusWidget"], .stDeployButton, [data-testid="stMainMenu"] {display: none !important;}
-        header[data-testid="stHeader"] {background-color: transparent !important;}
-        .stMainBlockContainer { min-height: 100vh; padding-top: 2rem; }
-        div[data-testid="stTabs"] { min-height: 800px; }
-        button[data-baseweb="tab"] { font-size: 16px !important; font-weight: 600 !important; }
-        .floating-widget { position: fixed; bottom: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; align-items: flex-end; font-family: sans-serif; }
-        #popup-toggle { display: none; }
-        .popup-btn { background-color: #ff4b4b; color: white; padding: 10px 20px; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(255,75,75,0.4); text-align: center; transition: 0.3s; user-select: none; }
-        .popup-btn:hover { background-color: #ff3333; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,75,75,0.6); }
-        .popup-iframe-container { display: none; margin-bottom: 15px; width: 420px; height: 550px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.5); background: #0e1117; border: 1px solid #444; }
-        #popup-toggle:checked ~ .popup-iframe-container { display: block; animation: fadeUp 0.3s ease; }
-        #popup-toggle:checked ~ .popup-btn::after { content: "Đóng Manga App ❌"; }
-        #popup-toggle:not(:checked) ~ .popup-btn::after { content: "Mở Manga Translator 🚀"; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .theme-switch-wrapper { position: fixed; bottom: 20px; left: 20px; z-index: 999999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-radius: 34px; }
-        .theme-switch { display: inline-block; height: 34px; position: relative; width: 64px; margin: 0; }
-        .theme-switch input { display:none; }
-        .theme-slider { background-color: #2b2b2b; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; border-radius: 34px; border: 1px solid #555; overflow: hidden; }
-        .theme-slider:before { background-color: #fff; bottom: 3px; content: ""; height: 26px; left: 4px; position: absolute; transition: .4s; width: 26px; border-radius: 50%; z-index: 3; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        input:checked + .theme-slider { background-color: #e0e0e0; border-color: #bbb; }
-        input:checked + .theme-slider:before { transform: translateX(28px); background-color: #222; }
-        .icon-theme { position: absolute; top: 5px; font-size: 16px; z-index: 2; }
-        .sun-icon { right: 7px; }
-        .moon-icon { left: 7px; }
-        body:has(#dark-mode-toggle:checked) .stApp { filter: invert(1) hue-rotate(180deg); }
-        body:has(#dark-mode-toggle:checked) iframe, body:has(#dark-mode-toggle:checked) img, body:has(#dark-mode-toggle:checked) .popup-btn { filter: invert(1) hue-rotate(180deg);  }
+        /* ============ FONT & BIẾN MÀU CHUNG ============ */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {{
+            --primary: {colors['primary']};
+            --primary-dark: {colors['primary_dark']};
+            --primary-light: {colors['primary_light']};
+            --accent: {colors['accent']};
+            --success: {colors['success']};
+            --danger: {colors['danger']};
+            --warning: {colors['warning']};
+            --surface: {colors['surface']};
+            --surface-soft: {colors['surface_soft']};
+            --border: {colors['border']};
+            --text-main: {colors['text_main']};
+            --text-muted: {colors['text_muted']};
+            --input-bg: {colors['input_bg']};
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: {colors['shadow_sm']};
+            --shadow-md: {colors['shadow_md']};
+            --shadow-lg: {colors['shadow_lg']};
+
+            --text-color: {colors['text_main']} !important;
+            --background-color: {colors['app_bg_1']} !important;
+            --secondary-background-color: {colors['surface']} !important;
+        }}
+
+        html, body, [class*="css"] {{ 
+            font-family: 'Inter', 'Segoe UI', sans-serif !important; 
+            color: var(--text-main) !important; 
+        }}
+
+        /* ============ ẨN CÁC THÀNH PHẦN MẶC ĐỊNH ============ */
+        [data-testid="stStatusWidget"], .stDeployButton, [data-testid="stMainMenu"] {{display: none !important;}}
+        header[data-testid="stHeader"] {{background-color: transparent !important;}}
+        footer {{visibility: hidden;}}
+
+        /* ============ NỀN TỔNG THỂ ============ */
+        .stApp, [data-testid="stAppViewContainer"] {{
+            background: linear-gradient(180deg, {colors['app_bg_1']} 0%, {colors['app_bg_2']} 100%) !important;
+        }}
+        .stMainBlockContainer {{ min-height: 100vh; padding-top: 1.5rem; padding-bottom: 4rem; max-width: 1400px; }}
+
+        /* ============ TIÊU ĐỀ & LABEL ============ */
+        h1 {{ font-weight: 800 !important; letter-spacing: -0.02em; color: var(--text-main) !important; font-size: 1.9rem !important; }}
+        h2, h3, h4, h5, h6 {{ font-weight: 700 !important; color: var(--text-main) !important; letter-spacing: -0.01em; }}
+        label p, .stSelectbox label p, .stTextInput label p, .stDateInput label p, .stNumberInput label p {{
+            color: var(--text-main) !important;
+            font-weight: 600 !important;
+        }}
+
+        /* ============ TABS ============ */
+        div[data-testid="stTabs"] {{ min-height: 800px; }}
+        div[data-testid="stTabs"] > div:first-child {{
+            background: var(--surface);
+            padding: 6px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+        }}
+        button[data-baseweb="tab"] {{
+            font-size: 15px !important; font-weight: 600 !important; border-radius: var(--radius-sm) !important;
+            color: var(--text-muted) !important; transition: all 0.2s ease; background-color: transparent;
+        }}
+        button[data-baseweb="tab"]:hover {{ color: var(--primary) !important; background: var(--primary-light) !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: var(--primary) !important; background: var(--primary-light) !important; }}
+        div[data-baseweb="tab-highlight"] {{ background-color: var(--primary) !important; height: 3px !important; border-radius: 3px; }}
+        div[data-baseweb="tab-border"] {{ display: none !important; }}
+
+        /* ============ EXPANDER & CONTAINERS ============ */
+        details[data-testid="stExpander"], div[data-testid="stVerticalBlockBorderWrapper"] {{
+            border-radius: var(--radius-md) !important; border: 1px solid var(--border) !important;
+            box-shadow: var(--shadow-sm); margin-bottom: 12px; background: var(--surface) !important; overflow: hidden;
+        }}
+        details[data-testid="stExpander"] summary {{
+            font-weight: 600 !important; background: var(--surface-soft); padding: 0.8rem 1rem !important; color: var(--text-main) !important;
+        }}
+        details[data-testid="stExpander"] summary:hover {{ background: var(--border); }}
+
+        /* ============ NÚT BẤM CƠ BẢN ============ */
+        .stButton button, .stFormSubmitButton button {{
+            border-radius: var(--radius-sm) !important; font-weight: 600 !important;
+            border: 1px solid var(--border) !important; background-color: var(--surface) !important;
+            color: var(--text-main) !important; transition: all 0.18s ease !important; box-shadow: var(--shadow-sm);
+        }}
+        .stButton button:hover, .stFormSubmitButton button:hover {{ transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: var(--primary) !important; }}
+        .stFormSubmitButton button[kind="primaryFormSubmit"], .stButton button[kind="primary"] {{
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+            border: none !important; color: white !important;
+        }}
+
+        /* ============ TOPBAR & NÚT ĐĂNG XUẤT (MINIMAL ICON) ============ */
+        div[data-testid="stHorizontalBlock"]:has(.user-topbar) {{
+            align-items: center; 
+            margin-bottom: 1rem;
+        }}
+        .user-topbar {{
+            background: linear-gradient(135deg, var(--surface-soft), var(--surface));
+            border: 1px solid var(--border);
+            color: var(--text-muted); padding: 0 18px;
+            border-radius: var(--radius-md); font-weight: 500; box-shadow: var(--shadow-sm); 
+            display: flex; align-items: center; gap: 12px; height: 44px;
+        }}
+        .user-topbar .role-badge {{ 
+            background: rgba(59, 130, 246, 0.15); color: var(--primary); 
+            padding: 2px 10px; border-radius: 999px; font-size: 12px; 
+            font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.3); 
+        }}
+        /* Nút Đăng xuất dạng icon vuông nhỏ */
+        div[data-testid="stHorizontalBlock"]:has(.user-topbar) .stButton button {{
+            background: rgba(248, 113, 113, 0.08) !important;
+            border: 1px solid rgba(248, 113, 113, 0.2) !important;
+            color: var(--danger) !important;
+            border-radius: var(--radius-md) !important;
+            height: 44px !important;
+            box-shadow: none !important;
+            transition: all 0.2s ease !important;
+            font-size: 18px !important; /* Làm to icon */
+            display: flex; justify-content: center; align-items: center;
+        }}
+        div[data-testid="stHorizontalBlock"]:has(.user-topbar) .stButton button:hover {{
+            background: var(--danger) !important;
+            color: white !important;
+            border-color: var(--danger) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25) !important;
+        }}
+
+        /* ============ INPUT / SELECT ============ */
+        div[data-baseweb="base-input"], div[data-baseweb="select"] > div {{
+            background-color: var(--input-bg) !important; border: 1px solid var(--border) !important;
+            border-radius: var(--radius-sm) !important; color: var(--text-main) !important;
+        }}
+        .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, div[data-baseweb="select"] span {{
+            background-color: transparent !important; color: var(--text-main) !important; -webkit-text-fill-color: var(--text-main) !important; border: none !important;
+        }}
+        div[data-baseweb="base-input"] svg, div[data-baseweb="input"] svg, div[data-baseweb="select"] svg {{
+            fill: var(--text-muted) !important; color: var(--text-muted) !important;
+        }}
+
+        /* ============ FLOATING WIDGET & DROPDOWN POPOVER ============ */
+        div[data-baseweb="popover"] > div, div[data-baseweb="popover"] ul {{
+            background-color: var(--surface) !important; border: 1px solid var(--border) !important;
+            border-radius: var(--radius-sm); color: var(--text-main) !important;
+        }}
+        div[data-baseweb="popover"] li {{ color: var(--text-main) !important; }}
+        div[data-baseweb="popover"] li:hover, div[data-baseweb="popover"] li[aria-selected="true"] {{ 
+            background-color: var(--primary-light) !important; color: var(--primary) !important; 
+        }}
+
+        /* ============ DATAFRAME ============ */
+        div[data-testid="stDataFrame"] {{
+            border-radius: var(--radius-md) !important; overflow: hidden; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border); background-color: var(--surface) !important;
+        }}
+
+        /* ============ METRIC ============ */
+        div[data-testid="stMetric"] {{
+            background: var(--surface-soft); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 0.8rem 1rem; text-align: center;
+        }}
+        div[data-testid="stMetricLabel"] p {{ color: var(--text-muted) !important; font-weight: 500 !important; }}
+        div[data-testid="stMetricValue"] > div {{ color: var(--primary) !important; font-weight: 800 !important; }}
+
+        /* ============ SIDEBAR & HEADER ============ */
+        section[data-testid="stSidebar"] {{ background: var(--surface) !important; border-right: 1px solid var(--border); }}
+        
+        /* ============ SCROLLBAR ============ */
+        ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
+        ::-webkit-scrollbar-track {{ background: var(--app_bg_1); }}
+        ::-webkit-scrollbar-thumb {{ background: var(--border); border-radius: 10px; }}
+        ::-webkit-scrollbar-thumb:hover {{ background: var(--text-muted); }}
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+
+# ---- ÁP DỤNG CSS DARK THEME ----
+render_dark_theme_css()
 
 # =====================================================================
 # 2. CƠ SỞ DỮ LIỆU TÀI KHOẢN VÀ LINK DỮ LIỆU
@@ -48,7 +209,7 @@ USER_SHEET_URL = "https://docs.google.com/spreadsheets/d/1VLlDF5XoXt0Rz0ACZ3EZRK
 CHECKLIST_API_URL = "https://script.google.com/macros/s/AKfycbyguXQno1gohakWqgfTwd0uP-b9BNkkExBcXIe23O267Jr2cXBX2JDSuS0_EVu_uv-7/exec"
 CHANGE_PASS_API = "https://script.google.com/macros/s/AKfycbxLWNSqylAHWvkY4JKNvCTpDQMiL2Vgl8_EYEhBI7Ob7OTcIVRXXiJmBQzDa4oNMAVK/exec"
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60, show_spinner=False)
 def load_users_from_sheet(url):
     try:
         df_users = pd.read_csv(url).dropna(subset=['Username', 'Password'])
@@ -56,7 +217,8 @@ def load_users_from_sheet(url):
     except Exception as e:
         return {}
 
-@st.cache_data(ttl=2) 
+# BẢNG LEADER: TỰ ĐỘNG CẬP NHẬT 5 PHÚT / 1 LẦN (300 GIÂY)
+@st.cache_data(ttl=300, show_spinner=False) 
 def load_checklist_data(api_url):
     try:
         if api_url == "" or "DÁN_LINK" in api_url: return pd.DataFrame()
@@ -67,29 +229,45 @@ def load_checklist_data(api_url):
     except Exception as e:
         return pd.DataFrame(columns=['Tên Tác Phẩm', 'Checkbox ID', 'Trạng Thái', 'Thời Gian'])
 
+# DỮ LIỆU SHEET: TỰ ĐỘNG CẬP NHẬT 1 PHÚT / 1 LẦN (60 GIÂY)
+@st.cache_data(ttl=60, show_spinner=False)
+def load_sheet_data(url):
+    cols = ['Công việc', 'Tên tác phẩm', 'Chương', 'Tập', 'Số trang', 'NXB', 'Ngày bắt đầu', 'Deadline (Nộp)', 'VN', 'Người thực hiện', 'QC Nội bộ', 'Quản lý', 'Trạng thái', 'Bắt đầu', 'Ghi chú']
+    try:
+        df = pd.read_csv(url, usecols=list(range(1, 16)), header=None)
+        df.columns = cols
+        return df
+    except:
+        return pd.DataFrame(columns=cols)
+
 USER_DB = load_users_from_sheet(USER_SHEET_URL)
 
 if 'lang' not in st.session_state: st.session_state.lang = 'vi'
 if 'df_nay_old' not in st.session_state: st.session_state.df_nay_old = None
+if 'df_truoc_old' not in st.session_state: st.session_state.df_truoc_old = None 
 if 'df_sau_old' not in st.session_state: st.session_state.df_sau_old = None
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'current_user' not in st.session_state: st.session_state.current_user = None
 if 'user_role' not in st.session_state: st.session_state.user_role = None
 if 'success_logs' not in st.session_state: st.session_state.success_logs = {}
-# Thêm biến lưu thời gian logtime gần nhất cho từng task
 if 'last_log_time' not in st.session_state: st.session_state.last_log_time = {}
 
 # =====================================================================
 # 3. HỆ THỐNG ĐĂNG NHẬP
 # =====================================================================
 if not st.session_state.logged_in:
-    st.markdown("<br><br><h2 style='text-align: center; color: #0f4c81;'>🔐 Đăng nhập VN-Tracking Dashboard</h2>", unsafe_allow_html=True)
+    st.markdown("""
+        <div class="login-hero">
+            <h2>🔐 Đăng nhập VN-Tracking Dashboard</h2>
+            <p>Hệ thống quản lý tiến độ công việc Team Việt Nam</p>
+        </div>
+    """, unsafe_allow_html=True)
     col_login1, col_login2, col_login3 = st.columns([1, 1, 1])
     with col_login2:
         with st.form("login_form"):
             username = st.selectbox("Tài khoản (Người thực hiện)", options=[""] + list(USER_DB.keys()))
             password = st.text_input("Mật khẩu", type="password")
-            submit_login = st.form_submit_button("Đăng nhập", use_container_width=True)
+            submit_login = st.form_submit_button("Đăng nhập", use_container_width=True, type="primary")
             
             if submit_login:
                 if username == "":
@@ -98,6 +276,7 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.current_user = username
                     st.session_state.user_role = USER_DB[username]["role"]
+                    st.session_state.just_logged_in = True  # Trạng thái cờ đánh dấu vừa login xong
                     st.success("Đăng nhập thành công! Đang tải dữ liệu...")
                     time.sleep(0.5)
                     st.rerun()
@@ -108,16 +287,23 @@ if not st.session_state.logged_in:
 # =====================================================================
 # 4. GIAO DIỆN HEADER, SIDEBAR ĐỔI PASS VÀ ĐA NGÔN NGỮ
 # =====================================================================
-col_logout1, col_logout2 = st.columns([9, 1])
+# Tỷ lệ cột được đẩy giãn ra để nút đăng xuất tạo thành khối vuông mượt mà
+col_logout1, col_logout2 = st.columns([15, 1], gap="small")
 with col_logout1:
-    st.info(f"👤 Đang đăng nhập: **{st.session_state.current_user}** | Quyền: **{st.session_state.user_role.upper()}**")
+    st.markdown(f"""
+        <div class="user-topbar">
+            <span style="font-size: 14.5px;">👤 Đang đăng nhập: <b style="color: var(--text-main);">{st.session_state.current_user}</b></span>
+            <span class="role-badge">{st.session_state.user_role.upper()}</span>
+        </div>
+    """, unsafe_allow_html=True)
 with col_logout2:
-    if st.button("🚪 Đăng xuất", use_container_width=True):
+    if st.button("🚪", use_container_width=True, help="Đăng xuất khỏi hệ thống"):
         st.session_state.logged_in = False
         st.session_state.current_user = None
         st.session_state.user_role = None
         st.session_state.success_logs = {}
-        st.session_state.last_log_time = {} # Xóa luôn thời gian chờ khi đăng xuất
+        st.session_state.last_log_time = {}
+        if 'just_logged_in' in st.session_state: del st.session_state['just_logged_in'] # Xóa cờ auto tab
         st.rerun()
 
 with st.sidebar:
@@ -126,7 +312,7 @@ with st.sidebar:
         old_pass = st.text_input("Mật khẩu cũ", type="password")
         new_pass = st.text_input("Mật khẩu mới", type="password")
         confirm_pass = st.text_input("Xác nhận mật khẩu mới", type="password")
-        submit_pass = st.form_submit_button("Lưu thay đổi", use_container_width=True)
+        submit_pass = st.form_submit_button("Lưu thay đổi", use_container_width=True, type="primary")
 
         if submit_pass:
             if not old_pass or not new_pass or not confirm_pass:
@@ -161,9 +347,9 @@ dict_lang = {
         'title': "📊 Quản lý tiến độ Team Việt Nam", 'filter_title': "### 🔍 Bộ lọc hiển thị",
         'cv_nay': "Công việc (Tuần Này):", 'nguoi_nay': "Người thực hiện (Tuần Này):",
         'cv_sau': "Công việc (Tuần Sau):", 'nguoi_sau': "Người thực hiện (Tuần Sau):",
-        'tab1': "📌 THÔNG TIN TUẦN NÀY", 'tab2': "⏭️ THÔNG TIN TUẦN SAU",
+        'tab0': "⏪ THÔNG TIN TUẦN TRƯỚC", 'tab1': "📌 THÔNG TIN TUẦN NÀY", 'tab2': "⏭️ THÔNG TIN TUẦN SAU",
         'time': "🗓️ Thời gian làm việc:", 'deadline': "🚨 DEADLINE CHÚ Ý:",
-        'no_filter': "Không có tác phẩm nào khớp với bộ lọc hoặc không có task của bạn!", 'no_task': "Tuần sau hiện chưa có task nào được phân công!",
+        'no_filter': "Không có tác phẩm nào khớp với bộ lọc hoặc không có task của bạn!", 'no_task': "Hiện chưa có task nào được phân công!",
         'metric_total': "Tổng số Task", 'metric_retouch': "Số task Retouch", 'metric_type': "Số task Lettering",
         'not_update': "Chưa cập nhật",
         'cols': ['Công việc', 'Tên tác phẩm', 'Chương', 'Tập', 'Số trang', 'NXB', 'Ngày bắt đầu', 'Deadline (Nộp)', 'VN', 'Người thực hiện', 'QC Nội bộ', 'Quản lý', 'Trạng thái', 'Bắt đầu', 'Ghi chú'],
@@ -178,9 +364,9 @@ dict_lang = {
         'title': "📊 ベトナムチーム進捗管理", 'filter_title': "### 🔍 表示フィルター",
         'cv_nay': "作業内容 (今週):", 'nguoi_nay': "作業者 (今週):",
         'cv_sau': "作業内容 (来週):", 'nguoi_sau': "作業者 (来週):",
-        'tab1': "📌 今週の情報", 'tab2': "⏭️ 来週の情報",
+        'tab0': "⏪ 先週の情報", 'tab1': "📌 今週の情報", 'tab2': "⏭️ 来週の情報",
         'time': "🗓️ 勤務期間:", 'deadline': "🚨 ご注意の締め切り:",
-        'no_filter': "フィルターに一致する作品はありません！", 'no_task': "来週のタスクはまだ割り当てられていません！",
+        'no_filter': "フィルターに一致する作品はありません！", 'no_task': "タスクはまだ割り当てられていません！",
         'metric_total': "表示中のタスク総数", 'metric_retouch': "レタッチタスク数", 'metric_type': "写植タスク数",
         'not_update': "未更新",
         'cols': ['作業内容', '作品名', '話数', '巻数', 'ページ', '出版社', '開始日', '提出日', 'VN', '作業者', '社内QC', '進行管理', 'ステータス', '開始', '備考'],
@@ -200,8 +386,13 @@ with col_title:
 # =====================================================================
 # 5. CÁC HÀM XỬ LÝ DỮ LIỆU CỐT LÕI
 # =====================================================================
-url = "https://docs.google.com/spreadsheets/d/1ec_v1hsKu0oCOwyrFNgxckpoaq3Q02J4NdIchqbYE3s/edit?usp=sharing"
+url = "https://docs.google.com/spreadsheets/d/1ec_v1hsKu0oCOwyrFNgxckpoaq3Q02J4NdIchqbYE3s/edit?gid=597870203#gid=597870203"
 csv_url = url.split("/edit")[0] + "/export?format=csv" if "/edit" in url else url
+
+# ĐƯỜNG LINK CHO TAB AFTER WEEK (TUẦN TRƯỚC)
+url_after_week = "https://docs.google.com/spreadsheets/d/1ec_v1hsKu0oCOwyrFNgxckpoaq3Q02J4NdIchqbYE3s/edit?gid=597870203#gid=597870203"
+csv_url_truoc = url_after_week.split("/edit")[0] + "/export?format=csv&" + url_after_week.split("#")[1] if "#gid" in url_after_week else url_after_week
+
 
 def get_clean_dates(vals_list):
     valid = []
@@ -229,18 +420,30 @@ def save_logtime(ngay_log, category, cong_viec, tac_pham, chuong, tap, so_trang_
     except: return False
 
 def get_checklist_html(tac_pham_key, index, lang, api_url):
+    # Cố định màu bảng HTML theo Dark Mode
+    ic = {
+        "bg": "transparent", "card_bg": "#1e293b", "card_border": "#334155",
+        "card_border_hover": "#475569", "text": "#f1f5f9", "text_muted": "#94a3b8",
+        "header_border": "#334155", "check_bg": "#0f172a", "check_border": "#475569",
+        "check_hover_bg": "#1e293b", "check_hover_border": "#64748b",
+        "snippet_bg": "#0f172a", "snippet_border": "#475569", "snippet_text": "#cbd5e1",
+        "btn_bg": "#0f172a", "btn_border": "#475569", "btn_text": "#60a5fa",
+        "btn_hover_bg": "#1e293b", "btn_hover_border": "#64748b", "btn_hover_text": "#f1f5f9",
+        "shadow": "0 4px 12px rgba(0,0,0,0.35)", "shadow_hover": "0 10px 20px rgba(0,0,0,0.5)",
+    }
+        
     txt = {
         'vi': {
             'step1': 'STEP 1: CHUẨN BỊ', 'step2': 'STEP 2: BẮT ĐẦU', 'step3': 'STEP 3: GIAO HÀNG',
             't1': 'Tạo Task DB_工程管理', 't2': 'N: notion済', 't3': 'Báo bắt đầu', 't4': 'O: 開始 (Bắt đầu)', 't5': 'Not Started → In Progress',
-            't6': 'Báo hoàn thành', 't7': 'N: 納品済み', 't8': 'Trạng thái: Delivered',
+            't6': 'Báo hoàn thành', 't7': 'N: 納品済み', 't8': 'Trạng thái: Delivered', 't9': 'Chú ý comment',
             'copy_start': '📋 Copy Báo Bắt Đầu', 'ask_task': 'Trễ chỉ thị? (Hỏi Task)', 'copy_ask': '📋 Copy Hỏi Task',
             'copy_done': '📋 Copy Báo Hoàn Thành', 'copied': '✅ Đã Copy', 'copy_deliver': '📋 Copy Báo Giao Hàng'
         },
         'ja': {
             'step1': 'STEP 1: 準備', 'step2': 'STEP 2: 着手', 'step3': 'STEP 3: 納品',
             't1': 'DB_工程管理に作成', 't2': 'N列：notion済', 't3': '着手報告 (Asana)', 't4': 'O列：開始', 't5': 'Not Started → In Progress',
-            't6': '完了報告 (Asana)', 't7': 'N列：納品済み', 't8': 'ステータス：Delivered',
+            't6': '完了報告 (Asana)', 't7': 'N列：納品済み', 't8': 'ステータス：Delivered', 't9': 'コメント注意',
             'copy_start': '📋 着手報告コピー', 'ask_task': '指示遅れ？', 'copy_ask': '📋 確認文コピー',
             'copy_done': '📋 完了報告コピー', 'copied': '✅ コピー完了', 'copy_deliver': '📋 納品メッセージコピー'
         }
@@ -252,27 +455,27 @@ def get_checklist_html(tac_pham_key, index, lang, api_url):
     <html lang="{lang}">
     <head>
         <style>
-            :root {{ --primary: #0f4c81; --bg: #f8f9fa; --text: #2c3e50; }}
-            * {{ box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }}
-            body {{ background: transparent; color: var(--text); padding: 5px; margin: 0; overflow: hidden; }}
+            :root {{ --primary: #2563eb; --bg: {ic['bg']}; --text: {ic['text']}; }}
+            * {{ box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }}
+            body {{ background: var(--bg); color: var(--text); padding: 5px; margin: 0; overflow: hidden; }}
             .grid-container {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; width: 100%; align-items: stretch; }}
-            .step-col {{ background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; height: 100%; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: transform 0.2s, box-shadow 0.2s; }}
-            .step-col:hover {{ transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.08); border-color: #cbd5e1; }}
-            .step-header {{ font-size: 12px; font-weight: 800; color: #16a34a; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }}
+            .step-col {{ background: {ic['card_bg']}; border: 1px solid {ic['card_border']}; border-radius: 14px; padding: 14px; height: 100%; display: flex; flex-direction: column; box-shadow: {ic['shadow']}; transition: transform 0.2s, box-shadow 0.2s; }}
+            .step-col:hover {{ transform: translateY(-2px); box-shadow: {ic['shadow_hover']}; border-color: {ic['card_border_hover']}; }}
+            .step-header {{ font-size: 12px; font-weight: 800; color: #16a34a; margin-bottom: 12px; border-bottom: 2px solid {ic['header_border']}; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }}
             .task-row {{ display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding: 4px 0; flex-wrap: wrap; }}
             .badge {{ font-size: 9px; padding: 3px 6px; border-radius: 4px; color: #fff; font-weight: bold; width: 52px; text-align: center; flex-shrink: 0; letter-spacing: 0.2px; }}
-            .notion {{ background: #000; }} .sheet {{ background: #107c41; }} .asana {{ background: #fc636b; }}
+            .notion {{ background: #000; }} .sheet {{ background: #107c41; }} .asana {{ background: #fc636b; }} .mikan {{ background: #f97316; }}
             .check-wrapper {{ position: relative; cursor: pointer; flex-grow: 1; display: flex; align-items: center; min-height: 20px; }}
             .check-wrapper input {{ display: none; }}
-            .action-text {{ font-size: 11.5px; margin-left: 24px; transition: 0.2s; line-height: 1.3; font-weight: 500; color: #334155; }}
-            .checkmark {{ position: absolute; top: 1px; left: 0; width: 16px; height: 16px; background: #f8fafc; border-radius: 4px; border: 1.5px solid #cbd5e1; transition: 0.2s; }}
-            .check-wrapper:hover .checkmark {{ border-color: #94a3b8; background: #f1f5f9; }}
+            .action-text {{ font-size: 11.5px; margin-left: 24px; transition: 0.2s; line-height: 1.3; font-weight: 600; color: {ic['text']}; }}
+            .checkmark {{ position: absolute; top: 1px; left: 0; width: 16px; height: 16px; background: {ic['check_bg']}; border-radius: 4px; border: 1.5px solid {ic['check_border']}; transition: 0.2s; }}
+            .check-wrapper:hover .checkmark {{ border-color: {ic['check_hover_border']}; background: {ic['check_hover_bg']}; }}
             .check-wrapper input:checked ~ .checkmark {{ background: #22c55e; border-color: #22c55e; }}
             .check-wrapper input:checked ~ .checkmark:after {{ content: ""; position: absolute; display: block; left: 5px; top: 1px; width: 3px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }}
-            .check-wrapper input:checked ~ .action-text {{ text-decoration: line-through; color: #94a3b8; font-weight: 400; }}
-            .snippet-box {{ background: #f8fafc; border: 1px dashed #cbd5e1; padding: 6px 8px; border-radius: 6px; font-family: monospace; font-size: 9.5px; color: #475569; white-space: pre-line; margin-bottom: 6px; margin-left: 62px; line-height: 1.4; }}
-            .btn-copy {{ display: inline-flex; align-items: center; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 6px; font-size: 9.5px; cursor: pointer; color: #0f4c81; font-weight: 600; margin-left: 62px; margin-bottom: 10px; transition: 0.2s; }}
-            .btn-copy:hover {{ background: #e2e8f0; border-color: #94a3b8; color: #000; }}
+            .check-wrapper input:checked ~ .action-text {{ text-decoration: line-through; color: {ic['text_muted']}; font-weight: 400; opacity: 0.8; }}
+            .snippet-box {{ background: {ic['snippet_bg']}; border: 1px dashed {ic['snippet_border']}; padding: 6px 8px; border-radius: 6px; font-family: monospace; font-size: 9.5px; color: {ic['snippet_text']}; white-space: pre-line; margin-bottom: 6px; margin-left: 62px; line-height: 1.4; }}
+            .btn-copy {{ display: inline-flex; align-items: center; background: {ic['btn_bg']}; border: 1px solid {ic['btn_border']}; padding: 4px 8px; border-radius: 6px; font-size: 9.5px; cursor: pointer; color: {ic['btn_text']}; font-weight: 600; margin-left: 62px; margin-bottom: 10px; transition: 0.2s; }}
+            .btn-copy:hover {{ background: {ic['btn_hover_bg']}; border-color: {ic['btn_hover_border']}; color: {ic['btn_hover_text']}; }}
             .btn-copy.success {{ background: #22c55e; color: white; border-color: #16a34a; }}
             summary {{ font-size: 10.5px; font-weight: 600; color: #d97706; cursor: pointer; margin-left: 62px; margin-bottom: 6px; user-select: none; transition: 0.2s; }}
             summary:hover {{ color: #b45309; }}
@@ -305,6 +508,7 @@ def get_checklist_html(tac_pham_key, index, lang, api_url):
                 <div class="task-row"><span class="badge notion">Notion</span><label class="check-wrapper"><input type="checkbox" id="t8_{index}"><span class="checkmark"></span><div class="action-text">{l['t8']}</div></label></div>
                 <div class="snippet-box" id="msg_t8_{index}">納品いたしました。\nご確認のほどよろしくお願いいたします。</div>
                 <button class="btn-copy" onclick="copyText(this, 'msg_t8_{index}')">{l['copy_deliver']}</button>
+                <div class="task-row"><span class="badge mikan">Mikan</span><label class="check-wrapper"><input type="checkbox" id="t9_{index}"><span class="checkmark"></span><div class="action-text">{l['t9']}</div></label></div>
             </div>
         </div>
         
@@ -321,7 +525,6 @@ def get_checklist_html(tac_pham_key, index, lang, api_url):
             
             const tpKey = "{tac_pham_key}";
             const API_URL = "{api_url}";
-            
             const checks = document.querySelectorAll('input[type="checkbox"]');
             
             checks.forEach(cb => {{
@@ -359,19 +562,25 @@ def get_checklist_html(tac_pham_key, index, lang, api_url):
 # =====================================================================
 # 6. RENDER DỮ LIỆU & ÁP DỤNG QUYỀN (ROLE-BASED)
 # =====================================================================
-@st.fragment(run_every="30s")
+@st.fragment(run_every="60s")
 def render_realtime_dashboard():
-    try: df_raw = pd.read_csv(csv_url, usecols=list(range(1, 16)), header=None)
-    except:
-        st.error("Lỗi tải dữ liệu chính.")
+    # Gọi hàm cached siêu nhanh (< 10ms nếu đã load)
+    df_raw = load_sheet_data(csv_url)
+    df_truoc_raw = load_sheet_data(csv_url_truoc)
+
+    if df_raw.empty:
+        st.error("Lỗi tải dữ liệu chính. Vui lòng kiểm tra lại link Google Sheets.")
         return
         
-    df_raw.columns = ['Công việc', 'Tên tác phẩm', 'Chương', 'Tập', 'Số trang', 'NXB', 'Ngày bắt đầu', 'Deadline (Nộp)', 'VN', 'Người thực hiện', 'QC Nội bộ', 'Quản lý', 'Trạng thái', 'Bắt đầu', 'Ghi chú']
+    # Cắt lọc các khoảng tuần
     idx_tuan = df_raw[df_raw.apply(lambda row: row.astype(str).str.contains('Tuần làm việc', case=False, na=False).any(), axis=1)].index
+    idx_tuan_truoc = df_truoc_raw[df_truoc_raw.apply(lambda row: row.astype(str).str.contains('Tuần làm việc', case=False, na=False).any(), axis=1)].index
 
     thong_tin_tuan_nay = {"start": t['not_update'], "end": t['not_update'], "deadline": t['not_update']}
     thong_tin_tuan_sau = {"start": t['not_update'], "end": t['not_update'], "deadline": t['not_update']}
+    thong_tin_tuan_truoc = {"start": t['not_update'], "end": t['not_update'], "deadline": t['not_update']}
 
+    # Lấy ngày tháng Tuần này / Tuần sau
     for idx_list, info_dict in [(idx_tuan[:1], thong_tin_tuan_nay), (idx_tuan[1:2], thong_tin_tuan_sau)]:
         if len(idx_list) > 0:
             start_idx = idx_list[0]
@@ -383,13 +592,28 @@ def render_realtime_dashboard():
                 if any('deadline' in str(v).lower() for v in row_vals) and len(dates) >= 1:
                     info_dict['deadline'] = dates[-1]
 
+    # Lấy ngày tháng Tuần trước
+    if len(idx_tuan_truoc) > 0:
+        start_idx = idx_tuan_truoc[0]
+        for i in range(start_idx, min(start_idx + 5, len(df_truoc_raw))):
+            row_vals = df_truoc_raw.iloc[i].dropna().astype(str).str.strip().tolist()
+            dates = get_clean_dates(row_vals)
+            if any('tuần' in str(v).lower() for v in row_vals) and len(dates) >= 2:
+                thong_tin_tuan_truoc['start'], thong_tin_tuan_truoc['end'] = dates[0], dates[1]
+            if any('deadline' in str(v).lower() for v in row_vals) and len(dates) >= 1:
+                thong_tin_tuan_truoc['deadline'] = dates[-1]
+
+    # Phân tách DataFrame
     df_tuan_nay = clean_df(df_raw.iloc[idx_tuan[0]:idx_tuan[1]].copy()) if len(idx_tuan) > 1 else clean_df(df_raw.iloc[idx_tuan[0]:].copy()) if len(idx_tuan) > 0 else df_raw.copy()
     df_tuan_sau = clean_df(df_raw.iloc[idx_tuan[1]:].copy()) if len(idx_tuan) > 1 else pd.DataFrame(columns=df_raw.columns)
+    df_tuan_truoc = clean_df(df_truoc_raw.iloc[idx_tuan_truoc[0]:].copy()) if len(idx_tuan_truoc) > 0 else clean_df(df_truoc_raw)
 
     if st.session_state.user_role == "member":
         df_tuan_nay = df_tuan_nay[df_tuan_nay["Người thực hiện"].astype(str).str.contains(st.session_state.current_user, na=False, regex=False)]
         df_tuan_sau = df_tuan_sau[df_tuan_sau["Người thực hiện"].astype(str).str.contains(st.session_state.current_user, na=False, regex=False)]
+        df_tuan_truoc = df_tuan_truoc[df_tuan_truoc["Người thực hiện"].astype(str).str.contains(st.session_state.current_user, na=False, regex=False)]
 
+    # Bộ lọc Filter cho Tuần Này / Sau
     st.write(t['filter_title'])
     col_f1, col_f2 = st.columns(2)
     with col_f1:
@@ -405,14 +629,125 @@ def render_realtime_dashboard():
     df_sau_f = df_tuan_sau[df_tuan_sau["Công việc"].isin(cv_sau)] if cv_sau else df_tuan_sau
     if nguoi_sau: df_sau_f = df_sau_f[df_sau_f["Người thực hiện"].astype(str).str.contains('|'.join(nguoi_sau), na=False, regex=True)]
 
-    tab_names = [t['tab1'], t['tab2']]
-    if st.session_state.user_role == "leader": 
-        tab_names.append("👑 BẢNG ĐIỀU KHIỂN (LEADER)")
-    
-    tabs = st.tabs(tab_names)
+    # ================= BẢNG ĐIỀU KHIỂN LEADER (NẰM NGOÀI TABS) =================
+    if st.session_state.user_role == "leader":
+        st.markdown("---")
+        c_head1, c_head2 = st.columns([8, 2])
+        with c_head1:
+            st.subheader("👑 Bảng Theo Dõi Tiến Độ Checklist (Theo Thời Gian Thực)")
+        with c_head2:
+            if st.button("🔄 Làm mới dữ liệu", use_container_width=True):
+                load_checklist_data.clear()
+        
+        df_check = load_checklist_data(CHECKLIST_API_URL)
+        
+        if df_check.empty:
+            st.warning("⚠️ Chưa có dữ liệu Checklist. Đang chờ đồng bộ...")
+        else:
+            # TỐI ƯU HÓA: Groupby để đếm số lượng checkbox hoàn thành cực nhanh
+            df_check['Trạng Thái'] = df_check['Trạng Thái'].astype(str).str.upper().isin(['TRUE', '1', 'T'])
+            df_check_latest = df_check.drop_duplicates(subset=['Tên Tác Phẩm', 'Checkbox ID'], keep='last')
+            
+            # Tạo dictionary đếm sẵn số lượng checkbox True cho từng Tác Phẩm
+            check_counts_dict = df_check_latest[df_check_latest['Trạng Thái'] == True].groupby('Tên Tác Phẩm')['Checkbox ID'].nunique().to_dict()
 
-    # === TAB 1: TUẦN NÀY ===
-    with tabs[0]:
+            dashboard_data = []
+            for _, row in df_nay_f.iterrows():
+                tp_name = str(row['Công việc']).strip() + " - " + str(row['Tên tác phẩm']).strip()
+                worker = str(row['Người thực hiện']).strip()
+                
+                checked_count = check_counts_dict.get(tp_name, 0)
+                
+                if checked_count == 0: status = "⏳ Chưa Bắt Đầu"
+                elif checked_count >= 9: status = "✅ Đã Giao Hàng" # Cập nhật thành 9 bước
+                else: status = "🔥 Đang Tiến Hành"
+                
+                progress = int((checked_count / 9) * 100) # Cập nhật thành 9 bước
+                dashboard_data.append({
+                    "Tên Tác Phẩm": tp_name,
+                    "Người Thực Hiện": worker,
+                    "Tiến Độ (%)": progress,
+                    "Trạng Thái": status
+                })
+            
+            df_dash = pd.DataFrame(dashboard_data)
+
+            status_style = {
+                "⏳ Chưa Bắt Đầu": ("var(--text-muted)", "rgba(148,163,184,0.15)"),
+                "🔥 Đang Tiến Hành": ("var(--warning)", "rgba(245,158,11,0.15)"),
+                "✅ Đã Giao Hàng": ("var(--success)", "rgba(34,197,94,0.15)"),
+            }
+
+            card_cols = st.columns(3)
+            for i, row_d in enumerate(dashboard_data):
+                color, bg = status_style.get(row_d["Trạng Thái"], ("var(--text-muted)", "rgba(148,163,184,0.15)"))
+                with card_cols[i % 3]:
+                    st.markdown(f"""
+                        <div style="
+                            background: var(--surface); border: 1px solid var(--border);
+                            border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 14px;
+                            box-shadow: var(--shadow-sm);">
+                            <div style="font-weight:700; font-size:13.5px; color: var(--text-main);
+                                        margin-bottom:4px; line-height:1.3; min-height:36px;">
+                                {row_d['Tên Tác Phẩm']}
+                            </div>
+                            <div style="font-size:12px; color: var(--text-muted); margin-bottom:10px;">
+                                👤 {row_d['Người Thực Hiện']}
+                            </div>
+                            <div style="background: var(--surface-soft); border-radius: 999px; height: 8px; overflow:hidden; margin-bottom:8px;">
+                                <div style="width:{row_d['Tiến Độ (%)']}%; height:100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius:999px;"></div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; color:{color}; background:{bg};">
+                                    {row_d['Trạng Thái']}
+                                </span>
+                                <span style="font-size:12px; font-weight:700; color: var(--text-main);">{row_d['Tiến Độ (%)']}%</span>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+        st.markdown("---")
+
+    # ================= CẤU TRÚC TAB =================
+    # Sắp xếp đúng logic yêu cầu: Tuần Trước -> Tuần Này -> Tuần Sau
+    tab_names = [t['tab0'], t['tab1'], t['tab2']] 
+    tabs = st.tabs(tab_names)
+    
+    tab_truoc = tabs[0]
+    tab_nay = tabs[1]
+    tab_sau = tabs[2]
+
+    # Xử lý tự động focus vào Tuần Này NGAY SAU KHI load xong các tab (Chỉ chạy 1 lần lúc đăng nhập)
+    if st.session_state.get('just_logged_in', False):
+        components.html("""
+        <script>
+            setTimeout(function() {
+                const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                if(tabs.length >= 2) {
+                    tabs[1].click(); // Focus vào tab Tuần Này (Index 1)
+                }
+            }, 100);
+        </script>
+        """, height=0, width=0)
+        st.session_state.just_logged_in = False # Đánh dấu đã thực hiện
+
+    # === TAB 1: TUẦN TRƯỚC ===
+    with tab_truoc:
+        st.info(f"**{t['time']}** {thong_tin_tuan_truoc['start']} ➡️ {thong_tin_tuan_truoc['end']} &nbsp;&nbsp;|&nbsp;&nbsp; **{t['deadline']}** {thong_tin_tuan_truoc['deadline']}")
+        if df_tuan_truoc.empty: st.warning(t['no_task'])
+        else:
+            df_display_truoc = df_tuan_truoc.copy()
+            df_display_truoc.columns = t['cols']
+            st.dataframe(df_display_truoc.style.apply(lambda _: highlight_changes(df_display_truoc, st.session_state.df_truoc_old), axis=None), use_container_width=True, hide_index=True)
+            st.session_state.df_truoc_old = df_display_truoc.copy()
+            
+            with st.container(border=True):
+                c7, c8, c9 = st.columns(3)
+                c7.metric(t['metric_total'], len(df_tuan_truoc))
+                c8.metric(t['metric_retouch'], len(df_tuan_truoc[df_tuan_truoc["Công việc"] == "レタッチ"]))
+                c9.metric(t['metric_type'], len(df_tuan_truoc[df_tuan_truoc["Công việc"] == "写植"]))
+
+    # === TAB 2: TUẦN NÀY ===
+    with tab_nay:
         st.info(f"**{t['time']}** {thong_tin_tuan_nay['start']} ➡️ {thong_tin_tuan_nay['end']} &nbsp;&nbsp;|&nbsp;&nbsp; **{t['deadline']}** {thong_tin_tuan_nay['deadline']}")
         if df_nay_f.empty: st.warning(t['no_filter'])
         else:
@@ -436,7 +771,7 @@ def render_realtime_dashboard():
                 worker_name = str(row['Người thực hiện']).strip()
                 
                 with st.expander(f"📝 {tp_name}  |  👤 {worker_name}"):
-                    components.html(get_checklist_html(tp_name, index, st.session_state.lang, CHECKLIST_API_URL), height=340, scrolling=False)
+                    components.html(get_checklist_html(tp_name, index, st.session_state.lang, CHECKLIST_API_URL), height=380, scrolling=False) 
                     
                     with st.form(key=f"form_log_{index}"):
                         c_cat, c_diff, c_worker, c_date = st.columns([1.5, 1.5, 2, 1.5])
@@ -454,7 +789,7 @@ def render_realtime_dashboard():
                         with col3: ghi_chu_log = st.text_input(t['f_note'], key=f"note_{index}")
                         
                         sub_c, msg_c = st.columns([2, 8])
-                        with sub_c: submit_btn = st.form_submit_button(t['f_btn'])
+                        with sub_c: submit_btn = st.form_submit_button(t['f_btn'], type="primary")
                             
                         # ---- XỬ LÝ CHẶN SPAM 5 PHÚT & PHÁO HOA ----
                         if submit_btn:
@@ -463,7 +798,6 @@ def render_realtime_dashboard():
                                 last_time = st.session_state.last_log_time.get(index, 0)
                                 time_diff = current_time - last_time
                                 
-                                # Nếu chưa qua 300 giây (5 phút), hiển thị cảnh báo
                                 if time_diff < 300: 
                                     rem_m, rem_s = divmod(int(300 - time_diff), 60)
                                     st.warning(f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ {rem_m} phút {rem_s} giây nữa để lưu lại task này.")
@@ -472,22 +806,20 @@ def render_realtime_dashboard():
                                 else:
                                     with st.spinner(t['f_sync']):
                                         if save_logtime(ngay_log, loai_truyen, row['Công việc'], row['Tên tác phẩm'], row['Chương'], row['Tập'], row['Số trang'], nguoi_lam_final, so_gio, so_page, do_kho, ghi_chu_log): 
-                                            # Đánh dấu thời gian thành công
                                             st.session_state.last_log_time[index] = time.time() 
-                                            
                                             msg = t['f_succ'].format(worker=nguoi_lam_final, hours=so_gio, pages=so_page)
                                             st.session_state.success_logs[index] = msg
                                             st.success(msg)
-                                            
-                                           
+                                            st.balloons() # HIỆU ỨNG PHÁO HOA KHI THÀNH CÔNG
                                         else: 
                                             st.error(t['f_err'])
                         elif index in st.session_state.success_logs:
                             with msg_c: 
                                 st.success(st.session_state.success_logs[index])
 
-    # === TAB 2: TUẦN SAU ===
-    with tabs[1]:
+
+    # === TAB 3: TUẦN SAU ===
+    with tab_sau:
         st.info(f"**{t['time']}** {thong_tin_tuan_sau['start']} ➡️ {thong_tin_tuan_sau['end']} &nbsp;&nbsp;|&nbsp;&nbsp; **{t['deadline']}** {thong_tin_tuan_sau['deadline']}")
         if df_sau_f.empty: st.warning(t['no_task'])
         else:
@@ -500,60 +832,6 @@ def render_realtime_dashboard():
                 c4.metric(t['metric_total'], len(df_sau_f))
                 c5.metric(t['metric_retouch'], len(df_sau_f[df_sau_f["Công việc"] == "レタッチ"]))
                 c6.metric(t['metric_type'], len(df_sau_f[df_sau_f["Công việc"] == "写植"]))
-
-    # === TAB 3: DASHBOARD LEADER ===
-    if st.session_state.user_role == "leader":
-        with tabs[2]:
-            c_head1, c_head2 = st.columns([8, 2])
-            with c_head1:
-                st.subheader("📊 Bảng Theo Dõi Tiến Độ Checklist (Theo Thời Gian Thực)")
-            with c_head2:
-                if st.button("🔄 Làm mới dữ liệu", use_container_width=True):
-                    load_checklist_data.clear()
-            
-            df_check = load_checklist_data(CHECKLIST_API_URL)
-            
-            if df_check.empty:
-                st.warning("⚠️ Chưa có dữ liệu Checklist. Đang chờ đồng bộ...")
-            else:
-                df_check['Trạng Thái'] = df_check['Trạng Thái'].astype(str).str.upper().isin(['TRUE', '1', 'T'])
-                df_check_latest = df_check.drop_duplicates(subset=['Tên Tác Phẩm', 'Checkbox ID'], keep='last')
-
-                dashboard_data = []
-                for _, row in df_nay_f.iterrows():
-                    tp_name = str(row['Công việc']).strip() + " - " + str(row['Tên tác phẩm']).strip()
-                    worker = str(row['Người thực hiện']).strip()
-                    
-                    task_checks = df_check_latest[df_check_latest['Tên Tác Phẩm'] == tp_name]
-                    checked_count = task_checks[task_checks['Trạng Thái'] == True]['Checkbox ID'].nunique()
-                    
-                    if checked_count == 0: status = "⏳ Chưa Bắt Đầu"
-                    elif checked_count == 8: status = "✅ Đã Giao Hàng"
-                    else: status = "🔥 Đang Tiến Hành"
-                    
-                    progress = int((checked_count / 8) * 100)
-                    dashboard_data.append({
-                        "Tên Tác Phẩm": tp_name,
-                        "Người Thực Hiện": worker,
-                        "Tiến Độ (%)": progress,
-                        "Trạng Thái": status
-                    })
-                
-                df_dash = pd.DataFrame(dashboard_data)
-                st.dataframe(
-                    df_dash,
-                    column_config={
-                        "Tiến Độ (%)": st.column_config.ProgressColumn(
-                            "Tiến Độ (%)",
-                            help="Tỷ lệ hoàn thành dựa trên số lượng checkbox đã đánh dấu",
-                            format="%d%%",
-                            min_value=0,
-                            max_value=100,
-                        ),
-                    },
-                    hide_index=True,
-                    use_container_width=True
-                )
 
 # GỌI HÀM RENDER
 render_realtime_dashboard()
