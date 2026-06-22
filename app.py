@@ -576,6 +576,64 @@ def render_realtime_dashboard():
             d_data.append({"Tên Tác Phẩm": tp_name, "Người Thực Hiện": worker, "Tiến Độ (%)": progress, "Trạng Thái": status})
         return d_data
 
+    # ================= HÀM RENDER LOGTIME CHUNG =================
+    def render_logtime_section(df_target, tab_prefix):
+        st.markdown("---")
+        st.subheader(t['logtime_title'])
+        if df_target.empty: st.info(t['logtime_empty'])
+        else:
+            for index, row in df_target.iterrows():
+                tp_name = str(row['Công việc']).strip() + " - " + str(row['Tên tác phẩm']).strip()
+                worker_name = str(row['Người thực hiện']).strip()
+                
+                with st.expander(f"📝 {tp_name}  |  👤 {worker_name}"):
+                    components.html(get_checklist_html(tp_name, index, st.session_state.lang, CHECKLIST_API_URL), height=380, scrolling=False) 
+                    
+                    # Dùng tab_prefix để tránh trùng lặp ID (form_log_truoc_1 vs form_log_nay_1)
+                    with st.form(key=f"form_log_{tab_prefix}_{index}"):
+                        c_cat, c_diff, c_worker, c_date = st.columns([1.5, 1.5, 2, 1.5])
+                        with c_cat: loai_truyen = st.selectbox(t['f_cat'], ["単行本", "読切", "連載"], index=0, key=f"cat_{tab_prefix}_{index}")
+                        with c_diff: do_kho = st.selectbox(t['f_diff'], ["", "低", "中", "高"], index=0, key=f"diff_{tab_prefix}_{index}")
+                        with c_worker:
+                            workers = list(USER_DB.keys())
+                            if pd.notna(worker_name) and worker_name and worker_name not in workers: workers.append(worker_name)
+                            nguoi_lam_final = st.selectbox(t['f_worker'], workers, index=workers.index(worker_name) if worker_name in workers else 0, key=f"sel_worker_{tab_prefix}_{index}")
+                        with c_date: ngay_log = st.date_input(t['f_date'], value=date.today(), key=f"date_{tab_prefix}_{index}")
+
+                        col1, col2, col3 = st.columns([2, 2, 4])
+                        with col1: so_gio = st.number_input(t['f_hours'], min_value=0.0, step=0.5, key=f"gio_{tab_prefix}_{index}")
+                        with col2: so_page = st.number_input(t['f_pages'].format(total=row['Số trang'] if pd.notna(row['Số trang']) else 0), min_value=0, step=1, key=f"page_{tab_prefix}_{index}")
+                        with col3: ghi_chu_log = st.text_input(t['f_note'], key=f"note_{tab_prefix}_{index}")
+                        
+                        sub_c, msg_c = st.columns([2, 8])
+                        with sub_c: submit_btn = st.form_submit_button(t['f_btn'], type="primary")
+                            
+                        # Quản lý log time success messages
+                        log_state_key = f"{tab_prefix}_{index}"
+                        if submit_btn:
+                            with msg_c:
+                                current_time = time.time()
+                                last_time = st.session_state.last_log_time.get(log_state_key, 0)
+                                time_diff = current_time - last_time
+                                
+                                if time_diff < 300: 
+                                    rem_m, rem_s = divmod(int(300 - time_diff), 60)
+                                    st.warning(f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ {rem_m} phút {rem_s} giây nữa để lưu lại task này.")
+                                elif so_gio == 0 and so_page == 0: 
+                                    st.warning(t['f_warn'])
+                                else:
+                                    with st.spinner(t['f_sync']):
+                                        if save_logtime(ngay_log, loai_truyen, row['Công việc'], row['Tên tác phẩm'], row['Chương'], row['Tập'], row['Số trang'], nguoi_lam_final, so_gio, so_page, do_kho, ghi_chu_log): 
+                                            st.session_state.last_log_time[log_state_key] = time.time() 
+                                            msg = t['f_succ'].format(worker=nguoi_lam_final, hours=so_gio, pages=so_page)
+                                            st.session_state.success_logs[log_state_key] = msg
+                                            st.success(msg)
+                                            st.balloons()
+                                        else: st.error(t['f_err'])
+                        elif log_state_key in st.session_state.success_logs:
+                            with msg_c: st.success(st.session_state.success_logs[log_state_key])
+
+
     # ================= CẤU TRÚC TAB =================
     tab_names = [t['tab0'], t['tab1'], t['tab2']] 
     tabs = st.tabs(tab_names)
@@ -617,6 +675,9 @@ def render_realtime_dashboard():
             st.dataframe(df_display_truoc.style.apply(lambda _: highlight_changes(df_display_truoc, st.session_state.df_truoc_old), axis=None), use_container_width=True, hide_index=True)
             st.session_state.df_truoc_old = df_display_truoc.copy()
 
+        # HIỂN THỊ LOGTIME/CHECKLIST CHO TUẦN TRƯỚC
+        render_logtime_section(df_tuan_truoc, "truoc")
+
     # === TAB 2: TUẦN NÀY ===
     with tab_nay:
         st.info(f"**{t['time']}** {thong_tin_tuan_nay['start']} ➡️ {thong_tin_tuan_nay['end']} &nbsp;&nbsp;|&nbsp;&nbsp; **{t['deadline']}** {thong_tin_tuan_nay['deadline']}")
@@ -649,58 +710,8 @@ def render_realtime_dashboard():
             st.dataframe(df_display.style.apply(lambda _: highlight_changes(df_display, st.session_state.df_nay_old), axis=None), use_container_width=True, hide_index=True)
             st.session_state.df_nay_old = df_display.copy()
             
-        # LOGTIME (ĐỂ Ở DƯỚI CÙNG NHƯ CŨ)
-        st.markdown("---")
-        st.subheader(t['logtime_title'])
-        if df_nay_f.empty: st.info(t['logtime_empty'])
-        else:
-            for index, row in df_nay_f.iterrows():
-                tp_name = str(row['Công việc']).strip() + " - " + str(row['Tên tác phẩm']).strip()
-                worker_name = str(row['Người thực hiện']).strip()
-                
-                with st.expander(f"📝 {tp_name}  |  👤 {worker_name}"):
-                    components.html(get_checklist_html(tp_name, index, st.session_state.lang, CHECKLIST_API_URL), height=380, scrolling=False) 
-                    
-                    with st.form(key=f"form_log_{index}"):
-                        c_cat, c_diff, c_worker, c_date = st.columns([1.5, 1.5, 2, 1.5])
-                        with c_cat: loai_truyen = st.selectbox(t['f_cat'], ["単行本", "読切", "連載"], index=0, key=f"cat_{index}")
-                        with c_diff: do_kho = st.selectbox(t['f_diff'], ["", "低", "中", "高"], index=0, key=f"diff_{index}")
-                        with c_worker:
-                            workers = list(USER_DB.keys())
-                            if pd.notna(worker_name) and worker_name and worker_name not in workers: workers.append(worker_name)
-                            nguoi_lam_final = st.selectbox(t['f_worker'], workers, index=workers.index(worker_name) if worker_name in workers else 0, key=f"sel_worker_{index}")
-                        with c_date: ngay_log = st.date_input(t['f_date'], value=date.today(), key=f"date_{index}")
-
-                        col1, col2, col3 = st.columns([2, 2, 4])
-                        with col1: so_gio = st.number_input(t['f_hours'], min_value=0.0, step=0.5, key=f"gio_{index}")
-                        with col2: so_page = st.number_input(t['f_pages'].format(total=row['Số trang'] if pd.notna(row['Số trang']) else 0), min_value=0, step=1, key=f"page_{index}")
-                        with col3: ghi_chu_log = st.text_input(t['f_note'], key=f"note_{index}")
-                        
-                        sub_c, msg_c = st.columns([2, 8])
-                        with sub_c: submit_btn = st.form_submit_button(t['f_btn'], type="primary")
-                            
-                        if submit_btn:
-                            with msg_c:
-                                current_time = time.time()
-                                last_time = st.session_state.last_log_time.get(index, 0)
-                                time_diff = current_time - last_time
-                                
-                                if time_diff < 300: 
-                                    rem_m, rem_s = divmod(int(300 - time_diff), 60)
-                                    st.warning(f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ {rem_m} phút {rem_s} giây nữa để lưu lại task này.")
-                                elif so_gio == 0 and so_page == 0: 
-                                    st.warning(t['f_warn'])
-                                else:
-                                    with st.spinner(t['f_sync']):
-                                        if save_logtime(ngay_log, loai_truyen, row['Công việc'], row['Tên tác phẩm'], row['Chương'], row['Tập'], row['Số trang'], nguoi_lam_final, so_gio, so_page, do_kho, ghi_chu_log): 
-                                            st.session_state.last_log_time[index] = time.time() 
-                                            msg = t['f_succ'].format(worker=nguoi_lam_final, hours=so_gio, pages=so_page)
-                                            st.session_state.success_logs[index] = msg
-                                            st.success(msg)
-                                            st.balloons()
-                                        else: st.error(t['f_err'])
-                        elif index in st.session_state.success_logs:
-                            with msg_c: st.success(st.session_state.success_logs[index])
+        # HIỂN THỊ LOGTIME/CHECKLIST CHO TUẦN NÀY
+        render_logtime_section(df_nay_f, "nay")
 
     # === TAB 3: TUẦN SAU ===
     with tab_sau:
