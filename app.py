@@ -5,7 +5,6 @@ from datetime import date
 import time
 import streamlit.components.v1 as components
 
-
 # =====================================================================
 # 1. CẤU HÌNH TRANG & MÃ CSS GỘP CHUNG (CHỐNG LIGHT MODE VÀ FIX LỖI MÀU)
 # =====================================================================
