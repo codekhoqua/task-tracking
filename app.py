@@ -4,6 +4,16 @@ import requests
 from datetime import date
 import time
 import streamlit.components.v1 as components
+import os
+
+# TRICK: TỰ ĐỘNG TẠO FILE CONFIG ĐỂ ÉP DARK MODE TRÊN CLOUD
+if not os.path.exists(".streamlit"):
+    os.makedirs(".streamlit")
+
+config_path = ".streamlit/config.toml"
+if not os.path.exists(config_path):
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write('[theme]\nbase="dark"\n')
 
 # =====================================================================
 # 1. CẤU HÌNH TRANG & MÃ CSS GỘP CHUNG (CHỐNG LIGHT MODE VÀ FIX LỖI MÀU)
