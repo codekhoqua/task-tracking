@@ -42,10 +42,10 @@ def render_dark_theme_css():
             background-color: var(--app_bg_1) !important;
         }}
 
-        /* ẨN CÁC THÀNH PHẦN MẶC ĐỊNH */
-        [data-testid="stStatusWidget"], .stDeployButton, [data-testid="stMainMenu"] {{display: none !important;}}
+       /* ẨN CÁC THÀNH PHẦN MẶC ĐỊNH (Đã hiển thị lại các nút) */
+        /* [data-testid="stStatusWidget"], .stDeployButton, [data-testid="stMainMenu"] {{display: none !important;}} */
         header[data-testid="stHeader"] {{background-color: transparent !important;}}
-        footer {{visibility: hidden;}}
+        /* footer {{visibility: hidden;}} */
 
         .stApp, [data-testid="stAppViewContainer"] {{
             background: linear-gradient(180deg, {colors['app_bg_1']} 0%, {colors['app_bg_2']} 100%) !important;
